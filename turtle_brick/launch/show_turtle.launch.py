@@ -16,7 +16,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 def generate_launch_description():
     turtle_brick_path = get_package_share_path('turtle_brick')
     default_model_path = turtle_brick_path / 'turtle.urdf.xacro'
-    default_rviz_config_path = turtle_brick_path / 'rviz/urdf.rviz'
+    default_rviz_config_path = turtle_brick_path / 'urdf.rviz'
 
     gui_arg = DeclareLaunchArgument(name='gui', default_value='true', choices=['true', 'false'],
                                     description='Flag to enable joint_state_publisher_gui')
