@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot name="turtle_robot">
-  <link name="base">
+  <link name="base_link">
     <visual>
       <geometry>
         <sphere radius="0.2"/>

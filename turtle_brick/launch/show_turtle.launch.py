@@ -27,6 +27,12 @@ def generate_launch_description():
 
     robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model')]),
                                        value_type=str)
+    
+    turtle_robot_node = Node(
+        package ='turtle_brick',
+        executable='turtle_robot'
+    )
+    
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
@@ -34,10 +40,16 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description}]
     )
 
-    turtle_robot_node = Node(
-        package ='turtle_brick',
-        executable='turtle_robot'
-    )
+    # Node(
+    # package="robot_state_publisher",
+    # executable="robot_state_publisher",
+    # parameters=[
+    #     {"robot_description" :
+    #     Command([TextSubstitution(text="xacro "),
+    #              PathJoinSubstitution(
+    #             [FindPackageShare("mypackage"), "my.urdf.xacro"])])}
+    #         ]
+    #         ),
 
     # Depending on gui parameter, either launch joint_state_publisher or joint_state_publisher_gui
     joint_state_publisher_node = Node(
@@ -51,6 +63,7 @@ def generate_launch_description():
         executable='joint_state_publisher_gui',
         condition=IfCondition(LaunchConfiguration('gui'))
     )
+    
 
     rviz_node = Node(
         package='rviz2',

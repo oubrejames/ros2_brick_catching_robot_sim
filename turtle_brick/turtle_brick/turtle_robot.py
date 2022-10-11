@@ -5,6 +5,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
+from tf2_ros import TransformBroadcaster
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -55,6 +56,13 @@ class TurtleRobot(Node):
         # Publish a static tf upon start up
         self.tf_static_broadcaster = StaticTransformBroadcaster(self)
         self.make_transforms()
+        
+        ### Below from in_out.py ###
+        self.dx = 10  # used to control frame movement
+        # create the broadcaster
+        self.broadcaster = TransformBroadcaster(self)
+        # Create a timer to do the rest of the transforms
+        self.tmr = self.create_timer(1, self.timer_callback)
 
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
@@ -65,12 +73,12 @@ class TurtleRobot(Node):
         # Name parent frame
         t.header.frame_id = 'world'
         # Set child frame
-        t.child_frame_id = "base"
+        t.child_frame_id = "odom"
 
-        # Populate pose of turtle (6D)
-        t.transform.translation.x = 0.0
+        # TODO update this to initial position of the turtle
+        t.transform.translation.x = 1.0
         t.transform.translation.y = 0.0
-        t.transform.translation.z = 1.0
+        t.transform.translation.z = 0.0
         quat = quaternion_from_euler(
             float(0), float(0), float(0))
         t.transform.rotation.x = quat[0]
@@ -80,6 +88,50 @@ class TurtleRobot(Node):
         
         # Broadcast TF
         self.tf_static_broadcaster.sendTransform(t)
+        
+    def timer_callback(self):
+        # Define odom frame 
+        base_link = TransformStamped()
+        base_link.header.frame_id = "odom"
+        base_link.child_frame_id = "base_link"
+        # TODO update this to initial position of the turtle
+        base_link.transform.translation.x = 1.0
+        base_link.transform.translation.y = 0.0
+        base_link.transform.translation.z = 0.0
+        quat_base = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
+        base_link.transform.rotation.x = quat_base[0]
+        base_link.transform.rotation.y = quat_base[1]
+        base_link.transform.rotation.z = quat_base[2]
+        base_link.transform.rotation.w = quat_base[3]
+
+
+        # # # Define brick frame 
+        brick = TransformStamped()
+        brick.header.frame_id = "world"
+        brick.child_frame_id = "brick"
+        # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
+        brick.transform.translation.x = 0.0
+        brick.transform.translation.y = 0.0
+        brick.transform.translation.z = 2.0
+        quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
+        brick.transform.rotation.x = quat_brick[0]
+        brick.transform.rotation.y = quat_brick[1]
+        brick.transform.rotation.z = quat_brick[2]
+        brick.transform.rotation.w = quat_brick[3]
+        
+        
+        # don't forget to put a timestamp
+        time = self.get_clock().now().to_msg()
+        base_link.header.stamp = time
+        brick.header.stamp = time
+        self.broadcaster.sendTransform(brick)
+        self.broadcaster.sendTransform(base_link)
+        
+
+        # update the movement
+        self.dx -= 1
+        if self.dx == 0:
+            self.dx = 10
 
 
 def main():
