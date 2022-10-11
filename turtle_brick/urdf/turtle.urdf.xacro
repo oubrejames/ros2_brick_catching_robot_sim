@@ -1,10 +1,37 @@
 <?xml version="1.0"?>
 <robot name="turtle_robot">
-  <link name="base_link">
+  <link name="wheel">
     <visual>
       <geometry>
-        <sphere radius="0.2"/>
+        <cylinder length="0.1" radius="0.2"/>
       </geometry>
     </visual>
   </link>
+
+  <link name="stem">
+    <visual>
+      <geometry>
+        <cylinder length="0.5" radius="0.05"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="wheel_to_stem" type="fixed">
+    <parent link="wheel"/>
+    <child link="stem"/>
+  </joint>
+
+  <link name="platform">
+    <visual>
+      <geometry>
+        <cylinder length="0.025" radius="0.3"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="stem_to_platform" type="fixed">
+    <parent link="stem"/>
+    <child link="platform"/>
+  </joint>
+
 </robot>
