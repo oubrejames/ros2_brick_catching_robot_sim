@@ -97,7 +97,7 @@ class TurtleRobot(Node):
         # TODO update this to initial position of the turtle
         base_link.transform.translation.x = 1.0
         base_link.transform.translation.y = 0.0
-        base_link.transform.translation.z = 0.0
+        base_link.transform.translation.z = 0.65
         quat_base = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]
         base_link.transform.rotation.y = quat_base[1]
@@ -121,59 +121,60 @@ class TurtleRobot(Node):
         
         ##### Make frames for robot parts #####
         
-        # Define wheel frame 
-        wheel = TransformStamped()
-        wheel.header.frame_id = "base_link"
-        wheel.child_frame_id = "wheel"
-        # TODO update this to initial position of the turtle
-        wheel.transform.translation.x = 0.0
-        wheel.transform.translation.y = 0.0
-        wheel.transform.translation.z = 0.2
-        # Right now the wheel tf is flipped 90, will be easier to make urdf flip
-        quat_wheel = quaternion_from_euler(float(np.pi/2), float(0), float(0)) # Roll pitch yaw
-        wheel.transform.rotation.x = quat_wheel[0]
-        wheel.transform.rotation.y = quat_wheel[1]
-        wheel.transform.rotation.z = quat_wheel[2]
-        wheel.transform.rotation.w = quat_wheel[3]
+        # # Define wheel frame 
+        # wheel = TransformStamped()
+        # wheel.header.frame_id = "base_link"
+        # wheel.child_frame_id = "wheel"
+        # # TODO update this to initial position of the turtle
+        # wheel.transform.translation.x = 0.0
+        # wheel.transform.translation.y = 0.0
+        # wheel.transform.translation.z = 0.2
+        # # Right now the wheel tf is flipped 90, will be easier to make urdf flip
+        # quat_wheel = quaternion_from_euler(float(np.pi/2), float(0), float(0)) # Roll pitch yaw
+        # wheel.transform.rotation.x = quat_wheel[0]
+        # wheel.transform.rotation.y = quat_wheel[1]
+        # wheel.transform.rotation.z = quat_wheel[2]
+        # wheel.transform.rotation.w = quat_wheel[3]
         
-        # Define stem frame 
-        stem = TransformStamped()
-        stem.header.frame_id = "wheel"
-        stem.child_frame_id = "stem"
-        # TODO update this to initial position of the turtle
-        stem.transform.translation.x = 0.0
-        stem.transform.translation.y = 0.2
-        stem.transform.translation.z = 0.0
-        quat_stem = quaternion_from_euler(float(-np.pi/2), float(0), float(0)) # Roll pitch yaw
-        stem.transform.rotation.x = quat_stem[0]
-        stem.transform.rotation.y = quat_stem[1]
-        stem.transform.rotation.z = quat_stem[2]
-        stem.transform.rotation.w = quat_stem[3]
         
-        # Define stem frame 
-        platform = TransformStamped()
-        platform.header.frame_id = "stem"
-        platform.child_frame_id = "platform"
-        # TODO update this to initial position of the turtle
-        platform.transform.translation.x = 0.0
-        platform.transform.translation.y = 0.0
-        platform.transform.translation.z = 0.25
-        quat_platform = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
-        platform.transform.rotation.x = quat_platform[0]
-        platform.transform.rotation.y = quat_platform[1]
-        platform.transform.rotation.z = quat_platform[2]
-        platform.transform.rotation.w = quat_platform[3]
+        # # Define stem frame 
+        # stem = TransformStamped()
+        # stem.header.frame_id = "wheel"
+        # stem.child_frame_id = "stem"
+        # # TODO update this to initial position of the turtle
+        # stem.transform.translation.x = 0.0
+        # stem.transform.translation.y = 0.2
+        # stem.transform.translation.z = 0.0
+        # quat_stem = quaternion_from_euler(float(-np.pi/2), float(0), float(0)) # Roll pitch yaw
+        # stem.transform.rotation.x = quat_stem[0]
+        # stem.transform.rotation.y = quat_stem[1]
+        # stem.transform.rotation.z = quat_stem[2]
+        # stem.transform.rotation.w = quat_stem[3]
+        
+        # # Define stem frame 
+        # platform = TransformStamped()
+        # platform.header.frame_id = "stem"
+        # platform.child_frame_id = "platform"
+        # # TODO update this to initial position of the turtle
+        # platform.transform.translation.x = 0.0
+        # platform.transform.translation.y = 0.0
+        # platform.transform.translation.z = 0.25
+        # quat_platform = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
+        # platform.transform.rotation.x = quat_platform[0]
+        # platform.transform.rotation.y = quat_platform[1]
+        # platform.transform.rotation.z = quat_platform[2]
+        # platform.transform.rotation.w = quat_platform[3]
                 
         # don't forget to put a timestamp
         time = self.get_clock().now().to_msg()
         base_link.header.stamp = time
         brick.header.stamp = time
-        wheel.header.stamp = time
-        stem.header.stamp = time
-        platform.header.stamp = time
-        self.broadcaster.sendTransform(platform)
-        self.broadcaster.sendTransform(wheel)
-        self.broadcaster.sendTransform(stem)
+        # wheel.header.stamp = time
+        # stem.header.stamp = time
+        # platform.header.stamp = time
+        # self.broadcaster.sendTransform(platform)
+        # self.broadcaster.sendTransform(wheel)
+        # self.broadcaster.sendTransform(stem)
         self.broadcaster.sendTransform(brick)
         self.broadcaster.sendTransform(base_link)
         

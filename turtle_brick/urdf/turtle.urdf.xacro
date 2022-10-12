@@ -1,5 +1,29 @@
 <?xml version="1.0"?>
-<robot name="turtle_robot">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="turtle_robot">
+
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.3 0.3 0.3"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="stem">
+    <visual>
+      <geometry>
+        <cylinder length="0.2" radius="0.05"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="base_to_stem" type="fixed">
+    <parent link="base_link"/>
+    <child link="stem"/>
+    <origin rpy="0 0 0" xyz="0 0 -0.15"/>
+  </joint>
+
   <link name="wheel">
     <visual>
       <geometry>
@@ -8,17 +32,31 @@
     </visual>
   </link>
 
-  <link name="stem">
+  <joint name="spin_wheel" type="continuous">
+    <axis xyz="0 0 1"/>
+    <parent link="stem"/>
+    <child link="wheel"/>
+    <origin rpy="0 1.57 0" xyz="0 0 -0.3"/>
+  </joint>
+
+  <joint name="turn_wheel" type="continuous">
+    <parent link="stem"/>
+    <child link="wheel"/>
+    <origin rpy="0 1.57 0" xyz="0 0 -0.3"/>
+  </joint>
+
+  <link name="tube">
     <visual>
       <geometry>
-        <cylinder length="0.5" radius="0.05"/>
+        <cylinder length="0.4" radius="0.05"/>
       </geometry>
     </visual>
   </link>
 
-  <joint name="wheel_to_stem" type="fixed">
-    <parent link="wheel"/>
-    <child link="stem"/>
+  <joint name="base_to_tube" type="fixed">
+    <parent link="base_link"/>
+    <child link="tube"/>
+    <origin xyz="0 0 0.3"/>
   </joint>
 
   <link name="platform">
@@ -29,9 +67,12 @@
     </visual>
   </link>
 
-  <joint name="stem_to_platform" type="fixed">
-    <parent link="stem"/>
+  <joint name="tilt_platform" type="revolute">    
+    <parent link="tube"/>
     <child link="platform"/>
+    <origin xyz="0 0 0.2"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.0" lower="-1.570" upper="1.57" velocity="0.5"/>
   </joint>
 
 </robot>
