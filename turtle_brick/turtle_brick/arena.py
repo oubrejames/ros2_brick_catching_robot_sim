@@ -6,7 +6,9 @@ import rclpy
 from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
+from geometry_msgs.msg import Point
+
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -52,7 +54,8 @@ class Arena(Node):
         """
         # Initialize node with name turtle_robot.
         super().__init__('arena')
-        self.pub_boundary = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for boundary of the arena
+        self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
+        self.pub_marker = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for boundary of the arena
         # self.cube = Marker()
         # self.cube.header._stamp = Arena.get_clock(self).now()
         # self.cube.id = 1
@@ -60,30 +63,119 @@ class Arena(Node):
         # #self.cube.lifetime = rclpy.duration.Duration(seconds=0).to_msg()
         # self.pub_boundary.publish(self.cube)
 
-        self.marker = Marker()
-        self.marker.header.frame_id = "/world"
-        self.marker.type = self.marker.CUBE
-        self.marker.action = self.marker.ADD
-        self.marker.scale.x = 10.0
-        self.marker.scale.y = 0.2
-        self.marker.scale.z = 1.0
-        self.marker.color.a = 1.0
-        trans = quaternion_from_euler(1.57, 0, 0)
-        self.marker.pose.orientation.w = trans[0]
-        self.marker.pose.orientation.x = trans[1]
-        self.marker.pose.orientation.y = trans[2]
-        self.marker.pose.orientation.z = trans[3]
-        self.marker.pose.position.x = 5.0
-        self.marker.pose.position.y = 0.0
-        self.marker.pose.position.z = 0.0
+        self.marker1 = Marker()
+        self.marker1.header.frame_id = "/world"
+        self.marker1.header.stamp = self.get_clock().now().to_msg()
+        self.marker1.type = self.marker1.CUBE
+        self.marker1.id =1
+        #self.marker1.action = self.marker1.ADD
+        self.marker1.scale.x = 10.0
+        self.marker1.scale.y = 0.2
+        self.marker1.scale.z = 1.0
+        self.marker1.color.a = 1.0
+        trans = quaternion_from_euler(0, 0, 0)
+        self.marker1.pose.orientation.w = trans[0]
+        self.marker1.pose.orientation.x = trans[1]
+        self.marker1.pose.orientation.y = trans[2]
+        self.marker1.pose.orientation.z = trans[3]
+        self.marker1.pose.position.x = 0.0
+        self.marker1.pose.position.y = 5.0
+        self.marker1.pose.position.z = 0.5
         
+        self.marker2 = Marker()
+        self.marker2.header.frame_id = "/world"
+        self.marker2.header.stamp = self.get_clock().now().to_msg()
+        self.marker2.type = self.marker2.CUBE
+        self.marker2.id =2
+        #self.marker2.action = self.marker2.ADD
+        self.marker2.scale.x = 10.0
+        self.marker2.scale.y = 0.2
+        self.marker2.scale.z = 1.0
+        self.marker2.color.a = 1.0
+        trans = quaternion_from_euler(0,0, 0)
+        self.marker2.pose.orientation.w = trans[0]
+        self.marker2.pose.orientation.x = trans[1]
+        self.marker2.pose.orientation.y = trans[2]
+        self.marker2.pose.orientation.z = trans[3]
+        self.marker2.pose.position.x = 0.0
+        self.marker2.pose.position.y = -5.0
+        self.marker2.pose.position.z = 0.5
+        
+        self.marker3 = Marker()
+        self.marker3.header.frame_id = "/world"
+        self.marker3.header.stamp = self.get_clock().now().to_msg()
+        self.marker3.type = self.marker3.CUBE
+        self.marker3.id =3
+        #self.marker3.action = self.marker3.ADD
+        self.marker3.scale.x = 10.0
+        self.marker3.scale.y = 0.2
+        self.marker3.scale.z = 1.0
+        self.marker3.color.a = 1.0
+        trans = quaternion_from_euler(1.57, 0, 0)
+        self.marker3.pose.orientation.w = trans[0]
+        self.marker3.pose.orientation.x = trans[1]
+        self.marker3.pose.orientation.y = trans[2]
+        self.marker3.pose.orientation.z = trans[3]
+        self.marker3.pose.position.x = -5.0
+        self.marker3.pose.position.y = 0.0
+        self.marker3.pose.position.z = 0.5
+        
+        self.marker4 = Marker()
+        self.marker4.header.frame_id = "/world"
+        self.marker4.header.stamp = self.get_clock().now().to_msg()
+        self.marker4.type = self.marker4.CUBE
+        self.marker4.id =4
+        #self.marker4.action = self.marker4.ADD
+        self.marker4.scale.x = 10.0
+        self.marker4.scale.y = 0.2
+        self.marker4.scale.z = 1.0
+        self.marker4.color.a = 1.0
+        trans = quaternion_from_euler(1.57, 0, 0)
+        self.marker4.pose.orientation.w = trans[0]
+        self.marker4.pose.orientation.x = trans[1]
+        self.marker4.pose.orientation.y = trans[2]
+        self.marker4.pose.orientation.z = trans[3]
+        self.marker4.pose.position.x = 5.0
+        self.marker4.pose.position.y = 0.0
+        self.marker4.pose.position.z = 0.5
+        
+        
+        self.marker_array = MarkerArray()
+        self.marker_array.markers.append(self.marker1)
+        self.marker_array.markers.append(self.marker2)
+        self.marker_array.markers.append(self.marker3)
+        self.marker_array.markers.append(self.marker4)
+        # self._point1 = Point()
+        # self._point1.x = 10.0
+        # self._point1.y = 0.0
+        # self._point1.z = 0.0
+        
+        # self._point4 = Point()
+        # self._point4.x = 0.0
+        # self._point4.y = 10.0
+        # self._point4.z = 0.0
+        
+        
+        
+        # self._point2 = Point()
+        # self._point2.x = 0.0
+        # self._point2.y = 0.0
+        # self._point2.z = 0.0  
+        
+        # self._point3 = Point()
+        # self._point3.x = 0.0
+        # self._point3.y = 0.0
+        # self._point3.z = 0.0
+        
+        #self.marker1.points = [self._point1, self._point2, self._point3, self._point4]
         self.tmr = self.create_timer(1, self.timer_callback) 
-        self.pub_boundary.publish(self.marker)
+        
         
     def timer_callback(self):
         """
         """
-        #self.pub_boundary.publish(self.marker)
+        self.pub_boundary.publish(self.marker_array)
+        #self.pub_marker.publish(self.marker1)
 
 def main():
     logger = rclpy.logging.get_logger('logger')
