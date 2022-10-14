@@ -6,6 +6,7 @@ import rclpy
 from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
+from turtlesim.msg import Pose
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -62,8 +63,16 @@ class TurtleRobot(Node):
         # create the broadcaster
         self.broadcaster = TransformBroadcaster(self)
         # Create a timer to do the rest of the transforms
-        self.tmr = self.create_timer(0.004, self.timer_callback)
+        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
 
+        self.tmr = self.create_timer(0.004, self.timer_callback)
+        
+    def listener_callback(self, msg):
+        """Get turtle pose.
+        """
+        self.turtle_pose = msg
+        
+        
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
         t = TransformStamped()
@@ -76,8 +85,10 @@ class TurtleRobot(Node):
         t.child_frame_id = "odom"
 
         # TODO update this to initial position of the turtle
-        t.transform.translation.x = 1.0
-        t.transform.translation.y = 0.0
+        self.odom_x = 5.54
+        self.odom_y = 5.554
+        t.transform.translation.x = 5.54
+        t.transform.translation.y = 5.54
         t.transform.translation.z = 0.0
         quat = quaternion_from_euler(
             float(0), float(0), float(0))
@@ -95,8 +106,8 @@ class TurtleRobot(Node):
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"
         # TODO update this to initial position of the turtle
-        base_link.transform.translation.x = 1.0
-        base_link.transform.translation.y = 0.0
+        base_link.transform.translation.x = self.turtle_pose.x
+        base_link.transform.translation.y = self.turtle_pose.y
         base_link.transform.translation.z = 0.65
         quat_base = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]

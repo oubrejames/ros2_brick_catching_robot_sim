@@ -98,7 +98,7 @@ class Arena(Node):
         self.marker1.type = self.marker1.CUBE
         self.marker1.id =1
         #self.marker1.action = self.marker1.ADD
-        self.marker1.scale.x = 10.0
+        self.marker1.scale.x = 11.0
         self.marker1.scale.y = 0.2
         self.marker1.scale.z = 1.0
         self.marker1.color.a = 1.0
@@ -107,8 +107,8 @@ class Arena(Node):
         self.marker1.pose.orientation.x = trans[1]
         self.marker1.pose.orientation.y = trans[2]
         self.marker1.pose.orientation.z = trans[3]
-        self.marker1.pose.position.x = 0.0
-        self.marker1.pose.position.y = 5.0
+        self.marker1.pose.position.x = 5.5
+        self.marker1.pose.position.y = 11.0
         self.marker1.pose.position.z = 0.5
         
         self.marker2 = Marker()
@@ -117,7 +117,7 @@ class Arena(Node):
         self.marker2.type = self.marker2.CUBE
         self.marker2.id =2
         #self.marker2.action = self.marker2.ADD
-        self.marker2.scale.x = 10.0
+        self.marker2.scale.x = 11.0
         self.marker2.scale.y = 0.2
         self.marker2.scale.z = 1.0
         self.marker2.color.a = 1.0
@@ -126,8 +126,8 @@ class Arena(Node):
         self.marker2.pose.orientation.x = trans[1]
         self.marker2.pose.orientation.y = trans[2]
         self.marker2.pose.orientation.z = trans[3]
-        self.marker2.pose.position.x = 0.0
-        self.marker2.pose.position.y = -5.0
+        self.marker2.pose.position.x = 5.5
+        self.marker2.pose.position.y = 0.0
         self.marker2.pose.position.z = 0.5
         
         self.marker3 = Marker()
@@ -136,7 +136,7 @@ class Arena(Node):
         self.marker3.type = self.marker3.CUBE
         self.marker3.id =3
         #self.marker3.action = self.marker3.ADD
-        self.marker3.scale.x = 10.0
+        self.marker3.scale.x = 11.0
         self.marker3.scale.y = 0.2
         self.marker3.scale.z = 1.0
         self.marker3.color.a = 1.0
@@ -145,8 +145,8 @@ class Arena(Node):
         self.marker3.pose.orientation.x = trans[1]
         self.marker3.pose.orientation.y = trans[2]
         self.marker3.pose.orientation.z = trans[3]
-        self.marker3.pose.position.x = -5.0
-        self.marker3.pose.position.y = 0.0
+        self.marker3.pose.position.x = 0.0
+        self.marker3.pose.position.y = 5.5
         self.marker3.pose.position.z = 0.5
         
         self.marker4 = Marker()
@@ -155,7 +155,7 @@ class Arena(Node):
         self.marker4.type = self.marker4.CUBE
         self.marker4.id =4
         #self.marker4.action = self.marker4.ADD
-        self.marker4.scale.x = 10.0
+        self.marker4.scale.x = 11.0
         self.marker4.scale.y = 0.2
         self.marker4.scale.z = 1.0
         self.marker4.color.a = 1.0
@@ -164,8 +164,8 @@ class Arena(Node):
         self.marker4.pose.orientation.x = trans[1]
         self.marker4.pose.orientation.y = trans[2]
         self.marker4.pose.orientation.z = trans[3]
-        self.marker4.pose.position.x = 5.0
-        self.marker4.pose.position.y = 0.0
+        self.marker4.pose.position.x = 11.0
+        self.marker4.pose.position.y = 5.5
         self.marker4.pose.position.z = 0.5
         
     def make_marker_array(self):
@@ -186,8 +186,8 @@ class Arena(Node):
         brick.header.frame_id = "world"
         brick.child_frame_id = "brick"
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-        brick.transform.translation.x = 0.0
-        brick.transform.translation.y = 0.0
+        brick.transform.translation.x = 5.5
+        brick.transform.translation.y = 5.5
         brick.transform.translation.z = 8.0
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
