@@ -56,6 +56,8 @@ class Arena(Node):
         super().__init__('arena')
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
+        self.time = 0.0
+        self.brick_z = 8.0
         # self.cube = Marker()
         # self.cube.header._stamp = Arena.get_clock(self).now()
         # self.cube.id = 1
@@ -175,10 +177,14 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker2)
         self.marker_array.markers.append(self.marker3)
         self.marker_array.markers.append(self.marker4)
+          
+    def drop_brick(self):
+        self.brick_z -= 0.5*9.8*self.time**2
         
     def timer_callback(self):
         """
         """
+        self.time += 0.004
         self.pub_boundary.publish(self.marker_array)
         
         # # # Define brick frame 
@@ -188,7 +194,7 @@ class Arena(Node):
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
         brick.transform.translation.x = 5.5
         brick.transform.translation.y = 5.5
-        brick.transform.translation.z = 8.0
+        brick.transform.translation.z = self.brick_z
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
         brick.transform.rotation.y = quat_brick[1]
@@ -199,6 +205,7 @@ class Arena(Node):
         self.broadcaster.sendTransform(brick)
         self.make_brick()
         self.pub_brick.publish(self.brick)
+        self.drop_brick()
         
 def main():
     logger = rclpy.logging.get_logger('logger')
