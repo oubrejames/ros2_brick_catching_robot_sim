@@ -179,7 +179,8 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker4)
           
     def drop_brick(self):
-        self.brick_z -= 0.5*9.8*self.time**2
+        if self.brick_z > 0:
+            self.brick_z -= 0.5*9.8*self.time**2
         
     def timer_callback(self):
         """
