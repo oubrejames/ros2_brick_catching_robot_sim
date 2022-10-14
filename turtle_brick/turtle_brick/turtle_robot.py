@@ -53,7 +53,13 @@ class TurtleRobot(Node):
         """
         # Initialize node with name turtle_robot.
         super().__init__('turtle_robot')
+        self.turtle_pose = Pose()
+        self.turtle_pose.x = 5.5
+        self.turtle_pose.y = 5.5
+        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
 
+        self.odom_x = self.turtle_pose.x
+        self.odom_y = self.turtle_pose.y
         # Publish a static tf upon start up
         self.tf_static_broadcaster = StaticTransformBroadcaster(self)
         self.make_transforms()
@@ -63,10 +69,7 @@ class TurtleRobot(Node):
         # create the broadcaster
         self.broadcaster = TransformBroadcaster(self)
         # Create a timer to do the rest of the transforms
-        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
-        self.turtle_pose = Pose()
-        self.turtle_pose.x = 5.5
-        self.turtle_pose.y = 5.5
+
         self.tmr = self.create_timer(0.004, self.timer_callback)
         
     def listener_callback(self, msg):
@@ -87,10 +90,8 @@ class TurtleRobot(Node):
         t.child_frame_id = "odom"
 
         # TODO update this to initial position of the turtle
-        self.odom_x = 5.54
-        self.odom_y = 5.554
-        t.transform.translation.x = 5.54
-        t.transform.translation.y = 5.54
+        t.transform.translation.x = self.odom_x
+        t.transform.translation.y = self.odom_y
         t.transform.translation.z = 0.0
         quat = quaternion_from_euler(
             float(0), float(0), float(0))
