@@ -145,29 +145,7 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker2)
         self.marker_array.markers.append(self.marker3)
         self.marker_array.markers.append(self.marker4)
-        # self._point1 = Point()
-        # self._point1.x = 10.0
-        # self._point1.y = 0.0
-        # self._point1.z = 0.0
-        
-        # self._point4 = Point()
-        # self._point4.x = 0.0
-        # self._point4.y = 10.0
-        # self._point4.z = 0.0
-        
-        
-        
-        # self._point2 = Point()
-        # self._point2.x = 0.0
-        # self._point2.y = 0.0
-        # self._point2.z = 0.0  
-        
-        # self._point3 = Point()
-        # self._point3.x = 0.0
-        # self._point3.y = 0.0
-        # self._point3.z = 0.0
-        
-        #self.marker1.points = [self._point1, self._point2, self._point3, self._point4]
+
         self.tmr = self.create_timer(1, self.timer_callback) 
         
         
