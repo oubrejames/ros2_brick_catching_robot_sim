@@ -55,14 +55,43 @@ class Arena(Node):
         # Initialize node with name turtle_robot.
         super().__init__('arena')
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
-        self.pub_marker = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for boundary of the arena
+        self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         # self.cube = Marker()
         # self.cube.header._stamp = Arena.get_clock(self).now()
         # self.cube.id = 1
         # self.cube.type = 1
         # #self.cube.lifetime = rclpy.duration.Duration(seconds=0).to_msg()
         # self.pub_boundary.publish(self.cube)
-
+        
+        self.make_marker_array()
+        
+        self.broadcaster = TransformBroadcaster(self)
+        self.tmr = self.create_timer(0.004, self.timer_callback) 
+        
+    def make_brick(self):
+        self.brick = Marker()
+        self.brick.header.frame_id = "/brick"
+        self.brick.header.stamp = self.get_clock().now().to_msg()
+        self.brick.type = self.brick.CUBE
+        self.brick.id =5
+        #self.marker1.action = self.marker1.ADD
+        self.brick.scale.x = 0.4
+        self.brick.scale.y = 0.2
+        self.brick.scale.z = 0.2
+        self.brick.color.a = 1.0
+        self.brick.color.b = 0.3
+        self.brick.color.g = 0.3
+        self.brick.color.r = 0.7
+        transb = quaternion_from_euler(0, 0, 0)
+        self.brick.pose.orientation.w = transb[0]
+        self.brick.pose.orientation.x = transb[1]
+        self.brick.pose.orientation.y = transb[2]
+        self.brick.pose.orientation.z = transb[3]
+        self.brick.pose.position.x = 0.0
+        self.brick.pose.position.y = 0.0
+        self.brick.pose.position.z = 0.0
+        
+    def make_markers(self):
         self.marker1 = Marker()
         self.marker1.header.frame_id = "/world"
         self.marker1.header.stamp = self.get_clock().now().to_msg()
@@ -139,22 +168,38 @@ class Arena(Node):
         self.marker4.pose.position.y = 0.0
         self.marker4.pose.position.z = 0.5
         
-        
+    def make_marker_array(self):
+        self.make_markers()
         self.marker_array = MarkerArray()
         self.marker_array.markers.append(self.marker1)
         self.marker_array.markers.append(self.marker2)
         self.marker_array.markers.append(self.marker3)
         self.marker_array.markers.append(self.marker4)
-
-        self.tmr = self.create_timer(1, self.timer_callback) 
-        
         
     def timer_callback(self):
         """
         """
         self.pub_boundary.publish(self.marker_array)
-        #self.pub_marker.publish(self.marker1)
-
+        
+        # # # Define brick frame 
+        brick = TransformStamped()
+        brick.header.frame_id = "world"
+        brick.child_frame_id = "brick"
+        # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
+        brick.transform.translation.x = 0.0
+        brick.transform.translation.y = 0.0
+        brick.transform.translation.z = 8.0
+        quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
+        brick.transform.rotation.x = quat_brick[0]
+        brick.transform.rotation.y = quat_brick[1]
+        brick.transform.rotation.z = quat_brick[2]
+        brick.transform.rotation.w = quat_brick[3]
+        time = self.get_clock().now().to_msg()
+        brick.header.stamp = time
+        self.broadcaster.sendTransform(brick)
+        self.make_brick()
+        self.pub_brick.publish(self.brick)
+        
 def main():
     logger = rclpy.logging.get_logger('logger')
 

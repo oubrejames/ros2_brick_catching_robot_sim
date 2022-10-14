@@ -29,10 +29,10 @@ def generate_launch_description():
     robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model')]),
                                        value_type=str)
     
-    turtle_robot_node = Node(
-        package ='turtle_brick',
-        executable='turtle_robot'
-    )
+    # turtle_robot_node = Node(
+    #     package ='turtle_brick',
+    #     executable='turtle_robot'
+    # )
     
 
     robot_state_publisher_node = Node(
@@ -81,6 +81,5 @@ def generate_launch_description():
         joint_state_publisher_node,
         joint_state_publisher_gui_node,
         robot_state_publisher_node,
-        rviz_node,
-        turtle_robot_node
-    ])
+        rviz_node
+        ])

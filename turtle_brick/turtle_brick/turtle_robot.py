@@ -62,7 +62,7 @@ class TurtleRobot(Node):
         # create the broadcaster
         self.broadcaster = TransformBroadcaster(self)
         # Create a timer to do the rest of the transforms
-        self.tmr = self.create_timer(1, self.timer_callback)
+        self.tmr = self.create_timer(0.004, self.timer_callback)
 
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
@@ -102,36 +102,20 @@ class TurtleRobot(Node):
         base_link.transform.rotation.x = quat_base[0]
         base_link.transform.rotation.y = quat_base[1]
         base_link.transform.rotation.z = quat_base[2]
-        base_link.transform.rotation.w = quat_base[3]
-
-
-        # # # Define brick frame 
-        brick = TransformStamped()
-        brick.header.frame_id = "world"
-        brick.child_frame_id = "brick"
-        # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-        brick.transform.translation.x = 0.0
-        brick.transform.translation.y = 0.0
-        brick.transform.translation.z = 2.0
-        quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
-        brick.transform.rotation.x = quat_brick[0]
-        brick.transform.rotation.y = quat_brick[1]
-        brick.transform.rotation.z = quat_brick[2]
-        brick.transform.rotation.w = quat_brick[3]
-        
+        base_link.transform.rotation.w = quat_base[3]      
        
                 
         # don't forget to put a timestamp
         time = self.get_clock().now().to_msg()
         base_link.header.stamp = time
-        brick.header.stamp = time
+        
         # wheel.header.stamp = time
         # stem.header.stamp = time
         # platform.header.stamp = time
         # self.broadcaster.sendTransform(platform)
         # self.broadcaster.sendTransform(wheel)
         # self.broadcaster.sendTransform(stem)
-        self.broadcaster.sendTransform(brick)
+        
         self.broadcaster.sendTransform(base_link)
         
 
