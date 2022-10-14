@@ -64,7 +64,9 @@ class TurtleRobot(Node):
         self.broadcaster = TransformBroadcaster(self)
         # Create a timer to do the rest of the transforms
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
-
+        self.turtle_pose = Pose()
+        self.turtle_pose.x = 5.5
+        self.turtle_pose.y = 5.5
         self.tmr = self.create_timer(0.004, self.timer_callback)
         
     def listener_callback(self, msg):
@@ -106,8 +108,8 @@ class TurtleRobot(Node):
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"
         # TODO update this to initial position of the turtle
-        base_link.transform.translation.x = self.turtle_pose.x
-        base_link.transform.translation.y = self.turtle_pose.y
+        base_link.transform.translation.x = self.turtle_pose.x - 5.54
+        base_link.transform.translation.y = self.turtle_pose.y - 5.54
         base_link.transform.translation.z = 0.65
         quat_base = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]
