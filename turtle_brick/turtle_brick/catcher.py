@@ -56,7 +56,8 @@ class Catcher(Node):
         super().__init__('catcher')
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
-
+        self.platoform_height = 1.6
+        self.max_velocity = 0.22 #m/s TODO make a param
         
         self.make_marker_array()
         

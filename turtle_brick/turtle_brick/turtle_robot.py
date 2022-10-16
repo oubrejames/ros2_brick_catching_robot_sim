@@ -109,10 +109,10 @@ class TurtleRobot(Node):
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"
         # TODO update this to initial position of the turtle
-        base_link.transform.translation.x = self.turtle_pose.x - 5.54
-        base_link.transform.translation.y = self.turtle_pose.y - 5.54
+        base_link.transform.translation.x = self.turtle_pose.x - self.odom_x
+        base_link.transform.translation.y = self.turtle_pose.y - self.odom_y
         base_link.transform.translation.z = 0.65
-        quat_base = quaternion_from_euler(float(0), float(0), float(0)) # Roll pitch yaw
+        quat_base = quaternion_from_euler(float(0), float(0), float(self.turtle_pose.theta)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]
         base_link.transform.rotation.y = quat_base[1]
         base_link.transform.rotation.z = quat_base[2]

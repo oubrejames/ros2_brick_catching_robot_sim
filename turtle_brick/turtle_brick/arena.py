@@ -58,6 +58,7 @@ class Arena(Node):
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.time = 0.0
         self.brick_z = 8.0
+        self.platform_height = 1.31
         # self.cube = Marker()
         # self.cube.header._stamp = Arena.get_clock(self).now()
         # self.cube.id = 1
@@ -68,7 +69,7 @@ class Arena(Node):
         self.make_marker_array()
         
         self.broadcaster = TransformBroadcaster(self)
-        self.tmr = self.create_timer(0.004, self.timer_callback) 
+        self.tmr = self.create_timer(0.001, self.timer_callback) 
         
     def make_brick(self):
         self.brick = Marker()

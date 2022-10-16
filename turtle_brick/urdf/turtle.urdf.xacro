@@ -30,6 +30,7 @@
       <geometry>
         <cylinder length="0.1" radius="0.2"/>
       </geometry>
+      <origin rpy="1.57 0 0 "/>
     </visual>
   </link>
 
