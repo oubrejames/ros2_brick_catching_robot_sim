@@ -9,7 +9,9 @@ from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 from rcl_interfaces.msg import ParameterDescriptor
-
+from turtle_brick_interfaces.srv import Place
+from std_srvs.srv import Empty
+from enum import Enum, auto
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -38,7 +40,13 @@ def quaternion_from_euler(ai, aj, ak):
 
     return q
 
+class State(Enum):
+    """ States to keep track of where the system is.
+    """
+    DROP = auto(),
+    NOTHING = auto()
 
+    
 class Arena(Node):
     """
     Publishes markers to denote the boundaries of the environment in rviz. 
@@ -55,23 +63,45 @@ class Arena(Node):
         """
         # Initialize node with name turtle_robot.
         super().__init__('arena')
+        self.state = State.NOTHING
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.time = 0.0
-        self.brick_z = 8.0
+        
+        self.brick_x = 5.5
+        self.brick_y = 5.5
+        self.brick_z0 = 8.0
+        self.brick_z_current = self.brick_z0
+        self.brick_init = False # Flag to not spawn brick until called
+        
         self.declare_parameter("platform_height", 0.9,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
-        self.platform_h  = self.get_parameter("max_velocity").get_parameter_value().double_value             # self.cube = Marker()
-        # self.cube.header._stamp = Arena.get_clock(self).now()
-        # self.cube.id = 1
-        # self.cube.type = 1
-        # #self.cube.lifetime = rclpy.duration.Duration(seconds=0).to_msg()
-        # self.pub_boundary.publish(self.cube)
-        
+        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value            
+        self.place = self.create_service(Place, "place", self.place_callback)
+        self.drop = self.create_service(Empty, "drop", self.drop_callback)
+
+
         self.make_marker_array()
         
         self.broadcaster = TransformBroadcaster(self)
         self.tmr = self.create_timer(0.001, self.timer_callback) 
+
+    def place_callback(self, request, response):
+        """TODO"""
+        response = 7.0
+        return response
+        
+    
+    def dummy_place_callback(self, request):
+        """TODO"""
+        #should be request.x, request.y, request.z
+        self.brick_x = request[0]
+        self.brick_y = request[1]
+        self.brick_z0 = request[2]
+        self.brick_z_current = self.brick_z0
+        self.brick_init = True
+        self.brick_tf_and_pub()
+        
         
     def make_brick(self):
         self.brick = Marker()
@@ -181,24 +211,27 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker3)
         self.marker_array.markers.append(self.marker4)
           
+    def drop_callback(self, request, response):
+        self.state = State.DROP
+        return response
+    
     def drop_brick(self):
-        if self.brick_z > 0:
-            self.brick_z -= 0.5*9.8*self.time**2
         
-    def timer_callback(self):
-        """
-        """
-        self.time += 0.004
-        self.pub_boundary.publish(self.marker_array)
+        if self.brick_z_current > 0 and self.state == State.DROP:
+            self.time += 0.001
+            print("time", self.time, "z current", self.brick_z_current)
+            self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
         
+    
+    def brick_tf_and_pub(self):
         # # # Define brick frame 
         brick = TransformStamped()
         brick.header.frame_id = "world"
         brick.child_frame_id = "brick"
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-        brick.transform.translation.x = 5.5
-        brick.transform.translation.y = 5.5
-        brick.transform.translation.z = self.brick_z
+        brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
+        brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+        brick.transform.translation.z = self.brick_z_current
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
         brick.transform.rotation.y = quat_brick[1]
@@ -208,8 +241,20 @@ class Arena(Node):
         brick.header.stamp = time
         self.broadcaster.sendTransform(brick)
         self.make_brick()
-        self.pub_brick.publish(self.brick)
+        if self.brick_init: # Dont publish brick until initialized
+            self.pub_brick.publish(self.brick)
+            
+        
+    def timer_callback(self):
+        """
+        """
+        
+        self.pub_boundary.publish(self.marker_array)
         self.drop_brick()
+        self.brick_tf_and_pub()
+        if not self.brick_init:
+            self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
+        
         
 def main():
     logger = rclpy.logging.get_logger('logger')
