@@ -1,6 +1,6 @@
 /**:
    ros__parameters:
-    platform_height: 0.4
-    wheel_radius: 0.2
+    platform_height: 2
+    wheel_radius: 0.5
     max_velocity: 0.22
     gravity: 9.8

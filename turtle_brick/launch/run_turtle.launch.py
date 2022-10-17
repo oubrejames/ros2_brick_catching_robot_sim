@@ -17,10 +17,21 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     #Uses show_turtle.launch.py as appropriate to draw the turtle robot in rviz
         # Start turtle sim node
+        
+    config = os.path.join(
+        get_package_share_directory('turtle_brick'),
+        'config',
+        'turtle.yaml'
+        )    
+    
+    turtle_brick_path = get_package_share_path('turtle_brick')
+    turtle_param_path = turtle_brick_path / 'turtle.yaml'
+    
     turtlesim_node = Node(
             package='turtlesim',
             executable='turtlesim_node'
         )
+    
     run_turtle_node = IncludeLaunchDescription(
       PythonLaunchDescriptionSource([os.path.join(
          get_package_share_directory('turtle_brick')),
@@ -30,7 +41,8 @@ def generate_launch_description():
     # Start turtle robot node
     turtle_robot_node = Node(
         package ='turtle_brick',
-        executable='turtle_robot'
+        executable='turtle_robot',
+        parameters=[turtle_param_path]
     )
     
 

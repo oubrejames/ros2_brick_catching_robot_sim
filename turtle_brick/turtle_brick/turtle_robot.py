@@ -7,6 +7,8 @@ from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
 from turtlesim.msg import Pose
+from rcl_interfaces.msg import ParameterDescriptor
+import yaml
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -58,6 +60,15 @@ class TurtleRobot(Node):
         self.turtle_pose.y = 5.5
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
 
+        self.declare_parameter("wheel_radius", 0.22,
+                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
+        self.base_offset = 2*self.wheel_radius + 0.35
+        
+        
+        
+        
+        
         self.odom_x = self.turtle_pose.x
         self.odom_y = self.turtle_pose.y
         # Publish a static tf upon start up
@@ -111,7 +122,9 @@ class TurtleRobot(Node):
         # TODO update this to initial position of the turtle
         base_link.transform.translation.x = self.turtle_pose.x - self.odom_x
         base_link.transform.translation.y = self.turtle_pose.y - self.odom_y
-        base_link.transform.translation.z = 0.65
+        print("Base offset", self.base_offset)
+        print("WHeel Radius", self.wheel_radius)
+        base_link.transform.translation.z = self.base_offset
         quat_base = quaternion_from_euler(float(0), float(0), float(self.turtle_pose.theta)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]
         base_link.transform.rotation.y = quat_base[1]
