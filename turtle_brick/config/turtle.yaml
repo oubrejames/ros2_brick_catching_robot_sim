@@ -1,6 +1,6 @@
-/turtlesim1:
-  ros__parameters:
-    platform_height: 255
-    wheel_radius: 255
+/**:
+   ros__parameters:
+    platform_height: 0.4
+    wheel_radius: 0.2
     max_velocity: 0.22
     gravity: 9.8
