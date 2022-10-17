@@ -65,10 +65,6 @@ class TurtleRobot(Node):
         self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
         self.base_offset = 2*self.wheel_radius + 0.35
         
-        
-        
-        
-        
         self.odom_x = self.turtle_pose.x
         self.odom_y = self.turtle_pose.y
         # Publish a static tf upon start up

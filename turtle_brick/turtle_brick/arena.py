@@ -12,6 +12,7 @@ from rcl_interfaces.msg import ParameterDescriptor
 from turtle_brick_interfaces.srv import Place
 from std_srvs.srv import Empty
 from enum import Enum, auto
+from turtlesim.msg import Pose
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -44,7 +45,8 @@ class State(Enum):
     """ States to keep track of where the system is.
     """
     DROP = auto(),
-    NOTHING = auto()
+    NOTHING = auto(),
+    NEW_BRICK = auto()
 
     
 class Arena(Node):
@@ -73,10 +75,21 @@ class Arena(Node):
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
         self.brick_init = False # Flag to not spawn brick until called
+        # TODO initialize self.turtlepose here
+        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         
         self.declare_parameter("platform_height", 0.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
-        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value            
+        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value     
+        
+        self.declare_parameter("gravity", 9.8,
+                               ParameterDescriptor(description="The brick's acceleration due to gravity"))
+        self.gravity  = self.get_parameter("gravity").get_parameter_value().double_value    
+               
+        self.declare_parameter("max_velocity", 0.22,
+                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
+        
         self.place = self.create_service(Place, "place", self.place_callback)
         self.drop = self.create_service(Empty, "drop", self.drop_callback)
 
@@ -85,9 +98,15 @@ class Arena(Node):
         
         self.broadcaster = TransformBroadcaster(self)
         self.tmr = self.create_timer(0.001, self.timer_callback) 
-
+        
+    def listener_callback(self, msg):
+        """Get turtle pose.
+        """
+        self.turtle_pose = msg
+        
     def place_callback(self, request, response):
         """TODO"""
+        self.state = State.NEW_BRICK
         self.brick_x = request.x
         self.brick_y = request.y 
         self.brick_z0 = request.z  
@@ -105,8 +124,7 @@ class Arena(Node):
         self.brick_z0 = request[2]
         self.brick_z_current = self.brick_z0
         self.brick_init = True
-        self.brick_tf_and_pub()
-        
+        self.brick_tf_and_pub()            
         
     def make_brick(self):
         self.brick = Marker()
@@ -221,10 +239,9 @@ class Arena(Node):
         return response
     
     def drop_brick(self):
-        
         if self.brick_z_current > 0.1 and self.state == State.DROP:
             self.time += 0.001
-            print("time", self.time, "z current", self.brick_z_current)
+            #print("time", self.time, "z current", self.brick_z_current)
             self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
         
     
@@ -236,7 +253,11 @@ class Arena(Node):
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
         brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
         brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
-        brick.transform.translation.z = self.brick_z_current
+        if self.state == State.NEW_BRICK:
+            brick.transform.translation.z = self.brick_z0
+        else:
+            brick.transform.translation.z = self.brick_z_current
+            
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
         brick.transform.rotation.y = quat_brick[1]
