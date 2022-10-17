@@ -7,7 +7,7 @@ from rclpy.node import Node
 from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PoseStamped
 from rcl_interfaces.msg import ParameterDescriptor
 from turtle_brick_interfaces.srv import Place
 from std_srvs.srv import Empty
@@ -67,14 +67,14 @@ class Arena(Node):
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.time = 0.0
-        
+        self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
         self.brick_x = 5.5
         self.brick_y = 5.5
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
         self.brick_init = False # Flag to not spawn brick until called
         
-        self.declare_parameter("platform_height", 0.9,
+        self.declare_parameter("platform_height", 0.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value            
         self.place = self.create_service(Place, "place", self.place_callback)
@@ -217,7 +217,7 @@ class Arena(Node):
     
     def drop_brick(self):
         
-        if self.brick_z_current > 0 and self.state == State.DROP:
+        if self.brick_z_current > 0.1 and self.state == State.DROP:
             self.time += 0.001
             print("time", self.time, "z current", self.brick_z_current)
             self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
@@ -248,11 +248,16 @@ class Arena(Node):
     def timer_callback(self):
         """
         """
-        
+        goal = PoseStamped()
+        goal.pose.position.x = float(self.brick_x)
+        goal.pose.position.y = float(self.brick_y)
+        goal.pose.position.z = float(self.platform_h)
+        # Prob wanna add time for this later^ TODO
+        self.pub_goal.publish(goal)
         self.pub_boundary.publish(self.marker_array)
         self.drop_brick()
         self.brick_tf_and_pub()
-        if not self.brick_init:
+        if not self.brick_init: # TODO get rid of eventually when get service going
             self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
         
         

@@ -16,11 +16,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     #Uses show_turtle.launch.py as appropriate to draw the turtle robot in rviz
-
+    turtle_brick_path = get_package_share_path('turtle_brick')
+    turtle_param_path = turtle_brick_path / 'turtle.yaml'
     # Start turtle sim node
     arena_node = Node(
             package='turtle_brick',
-            executable='arena'
+            executable='arena',
+            parameters=[turtle_param_path]
         )
 
     
