@@ -76,7 +76,6 @@ class TurtleRobot(Node):
         self.make_transforms()
         
         ### Below from in_out.py ###
-        self.dx = 10  # used to control frame movement
         # create the broadcaster
         self.broadcaster = TransformBroadcaster(self)
         # Create a timer to do the rest of the transforms
@@ -122,8 +121,6 @@ class TurtleRobot(Node):
         # TODO update this to initial position of the turtle
         base_link.transform.translation.x = self.turtle_pose.x - self.odom_x
         base_link.transform.translation.y = self.turtle_pose.y - self.odom_y
-        print("Base offset", self.base_offset)
-        print("WHeel Radius", self.wheel_radius)
         base_link.transform.translation.z = self.base_offset
         quat_base = quaternion_from_euler(float(0), float(0), float(self.turtle_pose.theta)) # Roll pitch yaw
         base_link.transform.rotation.x = quat_base[0]
@@ -145,12 +142,6 @@ class TurtleRobot(Node):
         
         self.broadcaster.sendTransform(base_link)
         
-
-        # update the movement
-        self.dx -= 1
-        if self.dx == 0:
-            self.dx = 10
-
 
 def main():
     logger = rclpy.logging.get_logger('logger')

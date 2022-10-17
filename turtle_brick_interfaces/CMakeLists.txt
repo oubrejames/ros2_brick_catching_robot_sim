@@ -11,6 +11,19 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
+########## OUBRE ADDED START #########
+# OUBRE - Added this to generate my custom service
+find_package(rosidl_default_generators REQUIRED)
+
+# OUBRE - Say what files to generate messages/services and dependencies
+rosidl_generate_interfaces(${PROJECT_NAME}
+     "srv/Place.srv" 
+     )
+# Export a dependency on the =ros_idl_runtime=
+ament_export_dependencies(rosidl_default_runtime)
+
+########## OUBRE ADDED END #########
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
