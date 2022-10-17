@@ -88,7 +88,12 @@ class Arena(Node):
 
     def place_callback(self, request, response):
         """TODO"""
-        response = 7.0
+        self.brick_x = request.x
+        self.brick_y = request.y 
+        self.brick_z0 = request.z  
+        self.brick_z_current = self.brick_z0
+        self.brick_init = True
+        self.brick_tf_and_pub()
         return response
         
     
@@ -257,8 +262,8 @@ class Arena(Node):
         self.pub_boundary.publish(self.marker_array)
         self.drop_brick()
         self.brick_tf_and_pub()
-        if not self.brick_init: # TODO get rid of eventually when get service going
-            self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
+        # if not self.brick_init: # TODO get rid of eventually when get service going
+        #     self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
         
         
 def main():
