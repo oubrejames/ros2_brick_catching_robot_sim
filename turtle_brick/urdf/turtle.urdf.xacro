@@ -1,5 +1,9 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="turtle_robot">
+<xacro:property name="yaml_file" value="$(find package)/config/turtle.yaml" />
+<xacro:property name="props" value="${load_yaml(yaml_file)}"/>
+<xacro:property name="platform_height" value="0.4" />
+<xacro:property name="wheel_radius" value="0.2" />
 
 
   <link name="base_link">
@@ -28,9 +32,9 @@
   <link name="wheel">
     <visual>
       <geometry>
-        <cylinder length="0.1" radius="0.2"/>
+        <cylinder length="0.1" radius="${wheel_radius}"/>
       </geometry>
-      <origin rpy="1.57 0 0 "/>
+      <origin rpy="${pi/2} 0 0 "/>
     </visual>
   </link>
 
@@ -39,7 +43,7 @@
     <axis xyz="0 0 1"/>
     <parent link="stem"/>
     <child link="wheel"/>
-    <origin rpy="0 1.57 0" xyz="0 0 -0.3"/>
+    <origin rpy="0 ${pi/2} 0" xyz="0 0 -0.3"/>
   </joint>
 
 
@@ -48,7 +52,7 @@
   <link name="tube">
     <visual>
       <geometry>
-        <cylinder length="0.4" radius="0.05"/>
+        <cylinder length="${platform_height}" radius="0.05"/>
       </geometry>
     </visual>
   </link>
@@ -70,9 +74,9 @@
   <joint name="tilt_platform" type="revolute">    
     <parent link="tube"/>
     <child link="platform"/>
-    <origin xyz="0 0 0.2"/>
+    <origin xyz="0 0 ${platform_height/2 + 0.025/2}"/>
     <axis xyz="0 1 0"/>
-    <limit effort="1000.0" lower="-1.570" upper="1.57" velocity="0.5"/>
+    <limit effort="1000.0" lower="${-pi/2}" upper="${pi/2}" velocity="0.5"/>
   </joint>
 
 </robot>

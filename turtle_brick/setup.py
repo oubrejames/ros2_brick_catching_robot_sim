@@ -9,7 +9,9 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml', 'launch/show_turtle.launch.py', 'launch/run_turtle.launch.py', 'launch/turtle_arena.launch.py', 'urdf/turtle.urdf.xacro','urdf/test.urdf', 'rviz/urdf.rviz']),
+        ('share/' + package_name, ['package.xml', 'launch/show_turtle.launch.py', 'launch/run_turtle.launch.py', 
+                                   'launch/turtle_arena.launch.py', 'urdf/turtle.urdf.xacro','urdf/test.urdf', 
+                                   'rviz/urdf.rviz', 'config/turtle.yaml']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
