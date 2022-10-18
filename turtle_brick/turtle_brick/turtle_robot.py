@@ -127,7 +127,7 @@ class TurtleRobot(Node):
         cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         
-        if abs(x)<0.05 and abs(y)<0.05: # Stop the jiggle
+        if abs(x)<0.01 and abs(y)<0.01: # Stop the jiggle
             cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
                 angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
             self.pub_vel.publish(cmd_2_goal)

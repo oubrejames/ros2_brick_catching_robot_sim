@@ -51,9 +51,10 @@ class State(Enum):
     """
     FALLING = auto(),
     INIT = auto(),
-    UNDETECTED = auto(),
+    LISTENING = auto(),
     UNREACHABLE = auto(),
-    REACHABLE = auto()
+    REACHABLE = auto(),
+    CAUGHT = auto()
     
 class Catcher(Node):
     """
@@ -93,7 +94,8 @@ class Catcher(Node):
         self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
         ##############
         self.pub_send_turtle_robot = self.create_publisher(Bool, "send_turtle_robot", 10)
-        
+        self.turtle_init = PoseStamped()
+        self.turtle_init_flag = True
         self.brick_status = False
         self.counter = 0
         self.pub_text = self.create_publisher(Marker, "text_marker", 10) # Marker publisher for text
@@ -147,6 +149,10 @@ class Catcher(Node):
     def listener_callback(self, msg):
         """Get turtle pose.
         """
+        if self.turtle_init_flag:
+            self.turtle_init = msg
+            self.turtle_init_flag = False
+            
         self.turtle_pose = msg
         
     def detect_falling(self):
@@ -196,6 +202,16 @@ class Catcher(Node):
             print("brick is reset")
             self.state = State.INIT
             self.flag = False
+    
+    def is_brick_caught(self):
+        """"""
+        zdiff = abs(self.brick_pose.z - self.platform_h)
+
+        if  zdiff < 0.15: # Is brick caught?
+            self.state = State.CAUGHT
+
+            
+        
     
     def listen_to_the_brick(self):
         from_frame_rel = self.target_frame
@@ -260,6 +276,14 @@ class Catcher(Node):
                 go_robot = Bool()
                 go_robot.data = True
                 self.pub_send_turtle_robot.publish(go_robot)
+                self.is_brick_caught()
+                
+            if self.state == State.CAUGHT:
+                print("BRICK CAUGHT")
+                home = PoseStamped()
+                home.pose.position.x = self.turtle_init.x
+                home.pose.position.y = self.turtle_init.y
+                self.pub_goal_pose.publish(home) 
         
 def main():
     logger = rclpy.logging.get_logger('logger')

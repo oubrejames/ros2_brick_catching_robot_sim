@@ -83,7 +83,7 @@ class Arena(Node):
 
         self.brick_init = False # Flag to not spawn brick until called
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
-        
+        self.turtle_pose = Pose()
         self.declare_parameter("platform_height", 1.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value     
@@ -261,6 +261,7 @@ class Arena(Node):
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
                 else:
+                    # self.state_brick = State.ON_PLATFORM
                     self.brick_z_current = self.platform_h+0.1
             
         if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
