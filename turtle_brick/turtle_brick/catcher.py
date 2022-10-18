@@ -16,6 +16,8 @@ from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Point, PoseStamped
 from turtlesim.msg import Pose
+from enum import Enum, auto
+from std_msgs.msg import Bool
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -44,6 +46,15 @@ def quaternion_from_euler(ai, aj, ak):
 
     return q
 
+class State(Enum):
+    """ States to keep track of where the system is.
+    """
+    FALLING = auto(),
+    INIT = auto(),
+    UNDETECTED = auto(),
+    UNREACHABLE = auto(),
+    REACHABLE = auto(),
+    NULL = auto()
 
 class Catcher(Node):
     """
@@ -60,7 +71,11 @@ class Catcher(Node):
             transformation (_type_): _description_
         """
         # Initialize node with name turtle_robot.
+        ####TODO TODO TODO Create a publisher in arena that says if brick is there and detect in here if the brick is there for doing stuff
+        
         super().__init__('catcher')
+        self.state = State.INIT
+        self.brick_state = State.NULL
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         
@@ -76,14 +91,17 @@ class Catcher(Node):
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
+        self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
+        self.brick_status = False
         self.counter = 0
         self.pub_text = self.create_publisher(Marker, "text_marker", 10) # Marker publisher for text
         self.text_counter = 0
+        self.flag = False
         self.broadcaster = TransformBroadcaster(self)
         self.brick_z0 = 20.0 # TODO this is wrong
         self.brick_pose = Point() 
         self.prev_brick_pose = Point()
-        self.brick_init = True
+        #self.brick_init = True
         self.pub_goal_pose = self.create_publisher(PoseStamped, "/goal_pose", 10)
 
         #TODO Listener 
@@ -121,6 +139,10 @@ class Catcher(Node):
             self.pub_text.publish(self.text_marker)
             self.text_counter += 1
         
+    def brick_status_callback(self, data):
+        self.brick_status = data.data
+        # print("Brick status",self.brick_status)
+        
     def listener_callback(self, msg):
         """Get turtle pose.
         """
@@ -129,35 +151,50 @@ class Catcher(Node):
     def detect_falling(self):
         """TODO"""
         # Is brick falling?
+        
         if self.is_brick_falling():
-            # Find time until brick is at platform height
-            time_to_platform = np.sqrt(self.brick_pose.z/self.gravity)
-            distance_to_brick = np.sqrt((self.brick_pose.x-self.turtle_pose.x)**2+(self.brick_pose.y-self.turtle_pose.y)**2)
-            # Can robot make it to goal in time?
-            #print("Its falling")
-            print("Max veloctiy", self.max_velocity)
-            print("Time to platform", time_to_platform)
-            print("distance_to_brick", distance_to_brick)
-            print("vel*time", self.max_velocity*time_to_platform)
-            if (self.max_velocity*time_to_platform) < distance_to_brick:
-                # I cant reach!
-                self.show_text_rviz()
-                print("I cant reach")  
-            else:
-                print("me thinks i can reach") 
-                goal_pose = PoseStamped()
-                goal_pose.pose.position.x = self.brick_pose.x
-                goal_pose.pose.position.y = self.brick_pose.y
-                self.pub_goal_pose.publish(goal_pose) 
+            self.state = State.FALLING
+            
+        # Find time until brick is at platform height
+        time_to_platform = np.sqrt(self.brick_pose.z/self.gravity)
+        distance_to_brick = np.sqrt((self.brick_pose.x-self.turtle_pose.x)**2+(self.brick_pose.y-self.turtle_pose.y)**2)
+        # Can robot make it to goal in time?
+        #print("Its falling")
+        print("Max veloctiy", self.max_velocity)
+        print("Time to platform", time_to_platform)
+        print("distance_to_brick", distance_to_brick)
+        print("vel*time", self.max_velocity*time_to_platform)
+        
+        if (self.max_velocity*time_to_platform) < distance_to_brick and self.state == State.FALLING:
+            # I cant reach!
+            self.state = State.UNREACHABLE
+            print("I cant reach")  
+        elif self.state == State.FALLING:
+            self.state = State.REACHABLE
+            print("me thinks i can reach") 
+
     
     def is_brick_falling(self):
-        
-        flag = False
+        # Should only enter falling state once
         #print("Last z = ", self.last_brick_pose.z, "Current z = ", self.brick_pose)
         if self.prev_brick_pose.z > self.brick_pose.z:
             print("brick is falling")
-            flag = True
-        return flag
+            self.flag = True
+        return self.flag
+    
+    def publish_goal(self):
+        goal_pose = PoseStamped()
+        goal_pose.pose.position.x = self.brick_pose.x
+        goal_pose.pose.position.y = self.brick_pose.y
+        self.pub_goal_pose.publish(goal_pose) 
+    
+    def did_brick_reset(self):
+        # Should only enter falling state once
+        #print("Last z = ", self.last_brick_pose.z, "Current z = ", self.brick_pose)
+        if self.prev_brick_pose.z < self.brick_pose.z:
+            print("brick is reset")
+            self.state = State.INIT
+            self.flag = False
     
     def listen_to_the_brick(self):
         from_frame_rel = self.target_frame
@@ -200,26 +237,22 @@ class Catcher(Node):
         self.brick_pose.x = t.transform.translation.x
         self.brick_pose.y = t.transform.translation.y
         self.brick_pose.z = t.transform.translation.z
-        
-        # if self.brick_init:
-            # try:
-            #     print("This should print once")
-            #     self.last_brick_pose = self.brick_pose
-            #     self.brick_init = False
-            #     print(self.last_brick_pose)
-            # except:
-            #     pass
-        # print(self.brick_pose.z)
-        # scale_forward_speed = 0.5
-        # msg.linear.x = scale_forward_speed * math.sqrt(
-        #     t.transform.translation.x ** 2 +
-        #     t.transform.translation.y ** 2)
     
     def timer_callback(self):
         """
         """
-        self.listen_to_the_brick()
-        self.detect_falling()
+        if self.brick_status:
+            self.listen_to_the_brick()
+            self.did_brick_reset()  
+            
+            if self.state == State.INIT:
+                self.detect_falling()
+                
+            if self.state == State.UNREACHABLE:
+                self.show_text_rviz()
+                
+            if self.state == State.REACHABLE:
+                self.publish_goal()
         
 def main():
     logger = rclpy.logging.get_logger('logger')

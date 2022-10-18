@@ -13,6 +13,7 @@ from turtle_brick_interfaces.srv import Place
 from std_srvs.srv import Empty
 from enum import Enum, auto
 from turtlesim.msg import Pose
+from std_msgs.msg import Bool
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -74,6 +75,8 @@ class Arena(Node):
         self.brick_y = 5.5
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
+        self.pub_brick_status = self.create_publisher(Bool, "brick_status", 10)
+
         self.brick_init = False # Flag to not spawn brick until called
         # TODO initialize self.turtlepose here
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
@@ -244,7 +247,6 @@ class Arena(Node):
             #print("time", self.time, "z current", self.brick_z_current)
             self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
         
-    
     def brick_tf_and_pub(self):
         # # # Define brick frame 
         brick = TransformStamped()
@@ -269,8 +271,7 @@ class Arena(Node):
         self.make_brick()
         if self.brick_init: # Dont publish brick until initialized
             self.pub_brick.publish(self.brick)
-            
-        
+             
     def timer_callback(self):
         """
         """
@@ -283,6 +284,9 @@ class Arena(Node):
         self.pub_boundary.publish(self.marker_array)
         self.drop_brick()
         self.brick_tf_and_pub()
+        brick_bool = Bool()
+        brick_bool.data = self.brick_init
+        self.pub_brick_status.publish(brick_bool)
         # if not self.brick_init: # TODO get rid of eventually when get service going
         #     self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
         

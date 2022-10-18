@@ -12,6 +12,8 @@ from rcl_interfaces.msg import ParameterDescriptor
 import yaml
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Point, PoseStamped
+from enum import Enum, auto
+from std_msgs.msg import Bool
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -41,6 +43,13 @@ def quaternion_from_euler(ai, aj, ak):
     return q
 
 
+class State(Enum):
+    """ States to keep track of where the system is.
+    """
+    FALLING = auto(),
+    INIT = auto(),
+    DETECTING = auto()
+    
 class TurtleRobot(Node):
     """
     Broadcast transforms that never change.
@@ -77,7 +86,6 @@ class TurtleRobot(Node):
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
         self.goal_pose = PoseStamped()
         self.base_offset = self.platform_h - 0.475
-        
         self.odom_x = self.turtle_pose.x
         self.odom_y = self.turtle_pose.y
         # Publish a static tf upon start up
@@ -110,7 +118,6 @@ class TurtleRobot(Node):
         cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         self.pub_vel.publish(cmd_2_goal)
-        
         
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
