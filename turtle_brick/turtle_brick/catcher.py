@@ -77,7 +77,7 @@ class Catcher(Node):
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         
-        self.declare_parameter("platform_height", 0.3,
+        self.declare_parameter("platform_height", 1.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value     
         
@@ -143,7 +143,6 @@ class Catcher(Node):
         
     def brick_status_callback(self, data):
         self.brick_status = data.data
-        # print("Brick status",self.brick_status)
         
     def listener_callback(self, msg):
         """Get turtle pose.

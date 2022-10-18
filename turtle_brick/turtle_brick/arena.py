@@ -46,8 +46,10 @@ class State(Enum):
     """ States to keep track of where the system is.
     """
     DROP = auto(),
-    NOTHING = auto(),
-    NEW_BRICK = auto()
+    INIT = auto(),
+    NEW_BRICK = auto(),
+    ON_PLATFORM = auto(),
+    ABOVE_PLATFORM = auto()
 
     
 class Arena(Node):
@@ -66,22 +68,23 @@ class Arena(Node):
         """
         # Initialize node with name turtle_robot.
         super().__init__('arena')
-        self.state = State.NOTHING
+        self.state = State.INIT
+        self.state_brick = State.INIT
+        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.time = 0.0
         #self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
-        self.brick_x = 5.5
-        self.brick_y = 5.5
+        self.brick_x = 12.0 # Made 12 so that brick frame always spawns outside of arena originally
+        self.brick_y = 12.0
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
         self.pub_brick_status = self.create_publisher(Bool, "brick_status", 10)
 
         self.brick_init = False # Flag to not spawn brick until called
-        # TODO initialize self.turtlepose here
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         
-        self.declare_parameter("platform_height", 0.3,
+        self.declare_parameter("platform_height", 1.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value     
         
@@ -116,18 +119,7 @@ class Arena(Node):
         self.brick_z_current = self.brick_z0
         self.brick_init = True
         self.brick_tf_and_pub()
-        return response
-        
-    
-    def dummy_place_callback(self, request):
-        """TODO"""
-        #should be request.x, request.y, request.z
-        self.brick_x = request[0]
-        self.brick_y = request[1]
-        self.brick_z0 = request[2]
-        self.brick_z_current = self.brick_z0
-        self.brick_init = True
-        self.brick_tf_and_pub()            
+        return response         
         
     def make_brick(self):
         self.brick = Marker()
@@ -242,10 +234,44 @@ class Arena(Node):
         return response
     
     def drop_brick(self):
-        if self.brick_z_current > 0.1 and self.state == State.DROP:
-            self.time += 0.001
-            #print("time", self.time, "z current", self.brick_z_current)
-            self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+        # Control states for keeping track of brick
+        #print("Brick state", self.state_brick)
+        # print("Brick x", self.brick_x)
+        # print("Brick y", self.brick_y)
+        
+        # print("Turtel pose y", self.turtle_pose.y)
+        # print("X diff", (self.turtle_pose.x - self.brick_x) )
+        # print("Y diff",(self.turtle_pose.y - self.brick_y) )
+
+        
+        if self.state == State.DROP:
+            if self.state_brick is not State.ABOVE_PLATFORM:  
+                if self.brick_z_current > 0.1:
+                # Check if on platform -> if yes stop brick at that height -> change state to on platform
+                    print("NOT HERE")
+
+                    self.time += 0.001
+                    self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+            
+            # If you are dropping and above the platform stop at platform height
+            # Else stop at ground
+            if self.state_brick == State.ABOVE_PLATFORM:
+                if self.brick_z_current > self.platform_h+0.1:
+                    print("HERE", self.platform_h)
+                    self.time += 0.001
+                    self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+                else:
+                    self.brick_z_current = self.platform_h+0.1
+            
+        if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
+            self.state_brick = State.ABOVE_PLATFORM    
+        # elif self.state == State.DROP and self.brick_z_current > 0.1:
+        #     self.time += 0.001
+        #     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+                
+
+                
+ 
         
     def brick_tf_and_pub(self):
         # # # Define brick frame 
@@ -275,20 +301,22 @@ class Arena(Node):
     def timer_callback(self):
         """
         """
-        goal = PoseStamped()
-        goal.pose.position.x = float(self.brick_x)
-        goal.pose.position.y = float(self.brick_y)
-        goal.pose.position.z = float(self.platform_h)
-        # Prob wanna add time for this later^ TODO
-        #self.pub_goal.publish(goal)
+        
+        # goal = PoseStamped()
+        # goal.pose.position.x = float(self.brick_x)
+        # goal.pose.position.y = float(self.brick_y)
+        # goal.pose.position.z = float(self.platform_h)
+
+        # Publish arena walls
         self.pub_boundary.publish(self.marker_array)
+        
+        
         self.drop_brick()
         self.brick_tf_and_pub()
         brick_bool = Bool()
         brick_bool.data = self.brick_init
         self.pub_brick_status.publish(brick_bool)
-        # if not self.brick_init: # TODO get rid of eventually when get service going
-        #     self.dummy_place_callback([3.0, 7.0, 20.0]) #TODO delete this later--dummy while waiting for service
+
         
         
 def main():

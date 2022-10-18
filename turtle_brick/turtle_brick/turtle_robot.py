@@ -77,7 +77,7 @@ class TurtleRobot(Node):
                                ParameterDescriptor(description="The radius of the turtle robot wheel in meters"))
         self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
         
-        self.declare_parameter("platform_height", 0.15,
+        self.declare_parameter("platform_height", 1.3,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
         
