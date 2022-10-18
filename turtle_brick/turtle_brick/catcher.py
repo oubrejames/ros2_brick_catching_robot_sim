@@ -77,7 +77,8 @@ class Catcher(Node):
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.counter = 0
-        
+        self.pub_text = self.create_publisher(Marker, "text_marker", 10) # Marker publisher for text
+        self.text_counter = 0
         self.broadcaster = TransformBroadcaster(self)
         self.brick_z0 = 20.0 # TODO this is wrong
         self.brick_pose = Point() 
@@ -93,7 +94,32 @@ class Catcher(Node):
         
         self.tmr = self.create_timer(0.01, self.timer_callback) 
 
-
+    def show_text_rviz(self):
+        if self.text_counter == 0:
+            self.text_marker = Marker()
+            self.text_marker.header.frame_id = "/world"
+            self.text_marker.header.stamp = self.get_clock().now().to_msg()
+            self.text_marker.type = self.text_marker.TEXT_VIEW_FACING
+            self.text_marker.text = "Unreachable :("
+            self.text_marker.id =1
+            self.text_marker.action = self.text_marker.ADD
+            self.text_marker.scale.x = 1.0
+            self.text_marker.scale.y = 3.0
+            self.text_marker.scale.z = 1.0
+            self.text_marker.color.a = 1.0
+            self.text_marker.lifetime.sec = 3
+            trans = quaternion_from_euler(0, 0, 0)
+            self.text_marker.pose.orientation.w = trans[0]
+            self.text_marker.pose.orientation.x = trans[1]
+            self.text_marker.pose.orientation.y = trans[2]
+            self.text_marker.pose.orientation.z = trans[3]
+            self.text_marker.pose.position.x = 5.5
+            self.text_marker.pose.position.y = 5.5
+            self.text_marker.pose.position.z = 0.5
+            self.text_counter +=1
+            self.pub_text.publish(self.text_marker)
+            self.text_counter += 1
+        
     def listener_callback(self, msg):
         """Get turtle pose.
         """
@@ -114,6 +140,7 @@ class Catcher(Node):
             print("vel*time", self.max_velocity*time_to_platform)
             if (self.max_velocity*time_to_platform) < distance_to_brick:
                 # I cant reach!
+                self.show_text_rviz()
                 print("I cant reach")  
             else:
                 print("me thinks i can reach")  
