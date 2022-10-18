@@ -53,9 +53,8 @@ class State(Enum):
     INIT = auto(),
     UNDETECTED = auto(),
     UNREACHABLE = auto(),
-    REACHABLE = auto(),
-    NULL = auto()
-
+    REACHABLE = auto()
+    
 class Catcher(Node):
     """
     Publishes markers to denote the boundaries of the environment in rviz. 
@@ -75,7 +74,6 @@ class Catcher(Node):
         
         super().__init__('catcher')
         self.state = State.INIT
-        self.brick_state = State.NULL
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         
@@ -87,9 +85,10 @@ class Catcher(Node):
                                ParameterDescriptor(description="The brick's acceleration due to gravity"))
         self.gravity  = self.get_parameter("gravity").get_parameter_value().double_value    
                
-        self.declare_parameter("max_velocity", 0.22,
+        self.declare_parameter("max_velocity", 0.4,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
+        
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
         self.brick_status = False
@@ -252,6 +251,7 @@ class Catcher(Node):
                 self.show_text_rviz()
                 
             if self.state == State.REACHABLE:
+                print("Publishing goal")
                 self.publish_goal()
         
 def main():

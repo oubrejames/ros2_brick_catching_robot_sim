@@ -172,6 +172,7 @@ class TurtleRobot(Node):
         # self.broadcaster.sendTransform(stem)
         
         self.broadcaster.sendTransform(base_link)
+        self.cmd_vel_to_goal()
         
 
 def main():
