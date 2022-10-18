@@ -68,6 +68,7 @@ class TurtleRobot(Node):
         # Initialize node with name turtle_robot.
         super().__init__('turtle_robot')
         self.turtle_pose = Pose()
+        self.state = State.INIT
         # self.turtle_pose.x = 5.5
         # self.turtle_pose.y = 5.5
         self.sub_turtle_pose = self.create_subscription(Pose, "turtle1/pose", self.listener_callback_turtle_pose, 10)
@@ -84,6 +85,11 @@ class TurtleRobot(Node):
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
+        
+        ###########
+        self.sub_go_robot = self.create_subscription(Bool, "send_turtle_robot", self.go_robot_callback, 10)
+        self.go_robot_flag = False
+        
         self.goal_pose = PoseStamped()
         self.base_offset = self.platform_h - 0.475
         self.odom_x = self.turtle_pose.x
@@ -99,6 +105,9 @@ class TurtleRobot(Node):
 
         self.tmr = self.create_timer(0.004, self.timer_callback)
        
+    def go_robot_callback(self, data):
+        self.go_robot_flag = data.data
+        
     def listener_callback_goal_pose(self, msg):
         """TODO"""
         self.goal_pose = msg  
@@ -117,7 +126,13 @@ class TurtleRobot(Node):
         y_vel = self.max_velocity*math.sin(theta)
         cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
-        self.pub_vel.publish(cmd_2_goal)
+        
+        if abs(x)<0.05 and abs(y)<0.05: # Stop the jiggle
+            cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
+                angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
+            self.pub_vel.publish(cmd_2_goal)
+        else:
+            self.pub_vel.publish(cmd_2_goal)
         
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
@@ -172,7 +187,8 @@ class TurtleRobot(Node):
         # self.broadcaster.sendTransform(stem)
         
         self.broadcaster.sendTransform(base_link)
-        self.cmd_vel_to_goal()
+        if self.go_robot_flag:
+            self.cmd_vel_to_goal()
         
 
 def main():

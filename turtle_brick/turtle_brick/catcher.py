@@ -70,7 +70,7 @@ class Catcher(Node):
             transformation (_type_): _description_
         """
         # Initialize node with name turtle_robot.
-        ####TODO TODO TODO Create a publisher in arena that says if brick is there and detect in here if the brick is there for doing stuff
+        ####TODO TODO TODO set up launch file and send params here 
         
         super().__init__('catcher')
         self.state = State.INIT
@@ -91,6 +91,9 @@ class Catcher(Node):
         
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
+        ##############
+        self.pub_send_turtle_robot = self.create_publisher(Bool, "send_turtle_robot", 10)
+        
         self.brick_status = False
         self.counter = 0
         self.pub_text = self.create_publisher(Marker, "text_marker", 10) # Marker publisher for text
@@ -253,6 +256,11 @@ class Catcher(Node):
             if self.state == State.REACHABLE:
                 print("Publishing goal")
                 self.publish_goal()
+                
+                # Tell the robot node to move
+                go_robot = Bool()
+                go_robot.data = True
+                self.pub_send_turtle_robot.publish(go_robot)
         
 def main():
     logger = rclpy.logging.get_logger('logger')
