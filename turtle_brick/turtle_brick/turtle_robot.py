@@ -63,7 +63,12 @@ class TurtleRobot(Node):
         self.declare_parameter("wheel_radius", 0.22,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
-        self.base_offset = 2*self.wheel_radius + 0.35
+        
+        self.declare_parameter("platform_height", 0.15,
+                               ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
+        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
+        
+        self.base_offset = self.platform_h - 0.475
         
         self.odom_x = self.turtle_pose.x
         self.odom_y = self.turtle_pose.y

@@ -116,7 +116,6 @@ class Catcher(Node):
             self.text_marker.pose.position.x = 5.5
             self.text_marker.pose.position.y = 5.5
             self.text_marker.pose.position.z = 0.5
-            self.text_counter +=1
             self.pub_text.publish(self.text_marker)
             self.text_counter += 1
         
