@@ -1,4 +1,5 @@
 import math
+from re import T
 import sys
 from geometry_msgs.msg import TransformStamped
 import numpy as np
@@ -75,13 +76,13 @@ class Catcher(Node):
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
-
+        self.counter = 0
         
         self.broadcaster = TransformBroadcaster(self)
         self.brick_z0 = 20.0 # TODO this is wrong
         self.brick_pose = Point() 
-        self.last_brick_pose = Point()
-        self.brick_init = False
+        self.prev_brick_pose = Point()
+        self.brick_init = True
         #TODO Listener 
         # Declare and acquire `target_frame` parameter
         self.target_frame = self.declare_parameter(
@@ -106,8 +107,12 @@ class Catcher(Node):
             time_to_platform = np.sqrt(self.brick_z0/self.gravity)
             distance_to_brick = np.sqrt((self.brick_pose.x-self.turtle_pose.x)**2+(self.brick_pose.y-self.turtle_pose.y)**2)
             # Can robot make it to goal in time?
-            print("Its falling")
-            if self.max_velocity*time_to_platform > distance_to_brick:
+            #print("Its falling")
+            print("Max veloctiy", self.max_velocity)
+            print("Time to platform", time_to_platform)
+            print("distance_to_brick", distance_to_brick)
+            print("vel*time", self.max_velocity*time_to_platform)
+            if (self.max_velocity*time_to_platform) < distance_to_brick:
                 # I cant reach!
                 print("I cant reach")  
             else:
@@ -116,7 +121,8 @@ class Catcher(Node):
     def is_brick_falling(self):
         
         flag = False
-        if self.last_brick_pose.z > self.brick_pose.z:
+        #print("Last z = ", self.last_brick_pose.z, "Current z = ", self.brick_pose)
+        if self.prev_brick_pose.z > self.brick_pose.z:
             print("brick is falling")
             flag = True
         return flag
@@ -125,6 +131,7 @@ class Catcher(Node):
         from_frame_rel = self.target_frame
         to_frame_rel = 'world'        
         
+
         # try:
         #     self.last_brick_pose = self.brick_pose
         # except:
@@ -138,8 +145,15 @@ class Catcher(Node):
                 to_frame_rel,
                 from_frame_rel,
                 rclpy.time.Time())
-            self.get_logger().info(
-                f'Z value {t.transform.translation.z}')
+            if self.counter == 0:
+                self.prev_brick_pose =  t.transform.translation
+            self.counter += 1
+            
+            if self.counter > 100:
+                self.counter = 0
+                
+            # self.get_logger().info(
+            #     f'Z value {t.transform.translation.z}')
         except TransformException as ex:
             self.get_logger().info(
                 f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
@@ -151,9 +165,18 @@ class Catcher(Node):
         #     t.transform.translation.y,
         #     t.transform.translation.x)
 
-        # self.brick_pose.x = t.transform.translation.x
-        # self.brick_pose.y = t.transform.translation.y
-        # self.brick_pose.z = t.transform.translation.z
+        self.brick_pose.x = t.transform.translation.x
+        self.brick_pose.y = t.transform.translation.y
+        self.brick_pose.z = t.transform.translation.z
+        
+        # if self.brick_init:
+            # try:
+            #     print("This should print once")
+            #     self.last_brick_pose = self.brick_pose
+            #     self.brick_init = False
+            #     print(self.last_brick_pose)
+            # except:
+            #     pass
         # print(self.brick_pose.z)
         # scale_forward_speed = 0.5
         # msg.linear.x = scale_forward_speed * math.sqrt(
@@ -164,7 +187,7 @@ class Catcher(Node):
         """
         """
         self.listen_to_the_brick()
-        #self.detect_falling()
+        self.detect_falling()
         
 def main():
     logger = rclpy.logging.get_logger('logger')

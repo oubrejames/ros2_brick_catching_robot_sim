@@ -18,11 +18,11 @@ def generate_launch_description():
     #Uses show_turtle.launch.py as appropriate to draw the turtle robot in rviz
         # Start turtle sim node
         
-    config = os.path.join(
-        get_package_share_directory('turtle_brick'),
-        'config',
-        'turtle.yaml'
-        )    
+    # config = os.path.join(
+    #     get_package_share_directory('turtle_brick'),
+    #     'config',
+    #     'turtle.yaml'
+    #     )    
     
     turtle_brick_path = get_package_share_path('turtle_brick')
     turtle_param_path = turtle_brick_path / 'turtle.yaml'
