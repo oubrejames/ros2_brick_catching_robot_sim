@@ -69,7 +69,7 @@ class Arena(Node):
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.time = 0.0
-        self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
+        #self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
         self.brick_x = 5.5
         self.brick_y = 5.5
         self.brick_z0 = 8.0
@@ -279,7 +279,7 @@ class Arena(Node):
         goal.pose.position.y = float(self.brick_y)
         goal.pose.position.z = float(self.platform_h)
         # Prob wanna add time for this later^ TODO
-        self.pub_goal.publish(goal)
+        #self.pub_goal.publish(goal)
         self.pub_boundary.publish(self.marker_array)
         self.drop_brick()
         self.brick_tf_and_pub()

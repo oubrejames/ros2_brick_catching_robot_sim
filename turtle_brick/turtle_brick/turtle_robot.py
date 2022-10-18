@@ -1,3 +1,4 @@
+from cmath import atan
 import math
 import sys
 from geometry_msgs.msg import TransformStamped
@@ -9,6 +10,8 @@ from tf2_ros import TransformBroadcaster
 from turtlesim.msg import Pose
 from rcl_interfaces.msg import ParameterDescriptor
 import yaml
+from geometry_msgs.msg import Twist, Vector3
+from geometry_msgs.msg import Point, PoseStamped
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -56,18 +59,23 @@ class TurtleRobot(Node):
         # Initialize node with name turtle_robot.
         super().__init__('turtle_robot')
         self.turtle_pose = Pose()
-        self.turtle_pose.x = 5.5
-        self.turtle_pose.y = 5.5
-        self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
-
-        self.declare_parameter("wheel_radius", 0.22,
-                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        # self.turtle_pose.x = 5.5
+        # self.turtle_pose.y = 5.5
+        self.sub_turtle_pose = self.create_subscription(Pose, "turtle1/pose", self.listener_callback_turtle_pose, 10)
+        self.sub_goal_pose = self.create_subscription(PoseStamped, "goal_pose", self.listener_callback_goal_pose, 10)
+        self.declare_parameter("wheel_radius", 0.2,
+                               ParameterDescriptor(description="The radius of the turtle robot wheel in meters"))
         self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
         
         self.declare_parameter("platform_height", 0.15,
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
         
+        self.declare_parameter("max_velocity", 0.22,
+                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
+        self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
+        self.goal_pose = PoseStamped()
         self.base_offset = self.platform_h - 0.475
         
         self.odom_x = self.turtle_pose.x
@@ -82,11 +90,26 @@ class TurtleRobot(Node):
         # Create a timer to do the rest of the transforms
 
         self.tmr = self.create_timer(0.004, self.timer_callback)
+       
+    def listener_callback_goal_pose(self, msg):
+        """TODO"""
+        self.goal_pose = msg  
         
-    def listener_callback(self, msg):
+    def listener_callback_turtle_pose(self, msg):
         """Get turtle pose.
         """
         self.turtle_pose = msg
+        
+    def cmd_vel_to_goal(self):
+        """"""
+        x = self.goal_pose.pose.position.x - self.turtle_pose.x
+        y = self.goal_pose.pose.position.y - self.turtle_pose.y
+        theta = math.atan2(y,x)
+        x_vel = self.max_velocity*math.cos(theta)
+        y_vel = self.max_velocity*math.sin(theta)
+        cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
+                        angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
+        self.pub_vel.publish(cmd_2_goal)
         
         
     def make_transforms(self):

@@ -84,6 +84,8 @@ class Catcher(Node):
         self.brick_pose = Point() 
         self.prev_brick_pose = Point()
         self.brick_init = True
+        self.pub_goal_pose = self.create_publisher(PoseStamped, "/goal_pose", 10)
+
         #TODO Listener 
         # Declare and acquire `target_frame` parameter
         self.target_frame = self.declare_parameter(
@@ -129,7 +131,7 @@ class Catcher(Node):
         # Is brick falling?
         if self.is_brick_falling():
             # Find time until brick is at platform height
-            time_to_platform = np.sqrt(self.brick_z0/self.gravity)
+            time_to_platform = np.sqrt(self.brick_pose.z/self.gravity)
             distance_to_brick = np.sqrt((self.brick_pose.x-self.turtle_pose.x)**2+(self.brick_pose.y-self.turtle_pose.y)**2)
             # Can robot make it to goal in time?
             #print("Its falling")
@@ -142,7 +144,11 @@ class Catcher(Node):
                 self.show_text_rviz()
                 print("I cant reach")  
             else:
-                print("me thinks i can reach")  
+                print("me thinks i can reach") 
+                goal_pose = PoseStamped()
+                goal_pose.pose.position.x = self.brick_pose.x
+                goal_pose.pose.position.y = self.brick_pose.y
+                self.pub_goal_pose.publish(goal_pose) 
     
     def is_brick_falling(self):
         
