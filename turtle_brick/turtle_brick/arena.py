@@ -295,6 +295,7 @@ class Arena(Node):
         if self.state_brick == State.CAUGHT:
             brick.transform.translation.x = self.turtle_pose.x # TODO Will need to update when make service work
             brick.transform.translation.y = self.turtle_pose.y # TODO Will need to update when make service work
+            brick.transform.translation.z = self.platform_h+0.1
             
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
