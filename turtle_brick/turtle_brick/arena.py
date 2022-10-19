@@ -1,6 +1,7 @@
 from lib2to3.pgen2 import driver
 from logging import getLogger
 import math
+from os import stat
 import sys
 from turtle import tilt
 from geometry_msgs.msg import TransformStamped
@@ -58,7 +59,8 @@ class State(Enum):
     ON_PLATFORM = auto(),
     ABOVE_PLATFORM = auto(),
     CAUGHT = auto(),
-    TILT = auto()
+    TILT = auto(),
+    SLIDE = auto()
     
 class Arena(Node):
     """
@@ -110,18 +112,22 @@ class Arena(Node):
         self.sub_tilt = self.create_subscription(Bool, "tilt_in_arena", self.tilt_callback, 10)
 
         self.make_marker_array()
-        
+        self.brick = TransformStamped()
+        self.brick.header.frame_id = "world"
+        self.brick.child_frame_id = "brick"
         self.broadcaster = TransformBroadcaster(self)
-        self.tmr = self.create_timer(0.001, self.timer_callback) 
+        
         self.target_frame = self.declare_parameter(
           'target_frame', 'brick').get_parameter_value().string_value
         self.tf_buffer_platform = Buffer()
         self.tf_listener_platform = TransformListener(self.tf_buffer_platform, self)
+        self.tmr = self.create_timer(0.001, self.timer_callback) 
         
     def tilt_callback(self, msg):
         """"""   
         if msg.data == True:
             self.state_brick = State.TILT
+            self.state = State.TILT
             print("lol")
             
     def brick_caught_callback(self, data):
@@ -171,30 +177,30 @@ class Arena(Node):
         return response         
         
     def make_brick(self):
-        self.brick = Marker()
-        self.brick.header.frame_id = "/brick"
-        self.brick.header.stamp = self.get_clock().now().to_msg()
-        self.brick.type = self.brick.CUBE
-        self.brick.id =5
+        self.brick_marker = Marker()
+        self.brick_marker.header.frame_id = "/brick"
+        self.brick_marker.header.stamp = self.get_clock().now().to_msg()
+        self.brick_marker.type = self.brick_marker.CUBE
+        self.brick_marker.id =5
         #self.marker1.action = self.marker1.ADD
-        self.brick.scale.x = 0.4
-        self.brick.scale.y = 0.2
-        self.brick.scale.z = 0.1
-        self.brick.color.a = 1.0
-        self.brick.color.b = 0.3
-        self.brick.color.g = 0.3
-        self.brick.color.r = 0.7
+        self.brick_marker.scale.x = 0.4
+        self.brick_marker.scale.y = 0.2
+        self.brick_marker.scale.z = 0.1
+        self.brick_marker.color.a = 1.0
+        self.brick_marker.color.b = 0.3
+        self.brick_marker.color.g = 0.3
+        self.brick_marker.color.r = 0.7
         transb = quaternion_from_euler(0, 0, 0)
-        self.brick.pose.orientation.w = transb[0]
-        self.brick.pose.orientation.x = transb[1]
-        self.brick.pose.orientation.y = transb[2]
-        self.brick.pose.orientation.z = transb[3]
-        self.brick.pose.position.x = 0.0
-        self.brick.pose.position.y = 0.0
-        self.brick.pose.position.z = 0.0
+        self.brick_marker.pose.orientation.w = transb[0]
+        self.brick_marker.pose.orientation.x = transb[1]
+        self.brick_marker.pose.orientation.y = transb[2]
+        self.brick_marker.pose.orientation.z = transb[3]
+        self.brick_marker.pose.position.x = 0.0
+        self.brick_marker.pose.position.y = 0.0
+        self.brick_marker.pose.position.z = 0.0
         
     def make_markers(self):
-        self.marker1 = Marker()
+        self.marker1 = Marker()#self.brick
         self.marker1.header.frame_id = "/world"
         self.marker1.header.stamp = self.get_clock().now().to_msg()
         self.marker1.type = self.marker1.CUBE
@@ -334,49 +340,48 @@ class Arena(Node):
         
     def brick_tf_and_pub(self):
         # # # Define brick frame 
-        brick = TransformStamped()
-        brick.header.frame_id = "world"
-        brick.child_frame_id = "brick"
+
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
 
         if self.state == State.NEW_BRICK:
-            brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
-            brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
-            brick.transform.translation.z = self.brick_z0
+            self.brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
+            self.brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+            self.brick.transform.translation.z = self.brick_z0
         elif self.state == State.DROP:
-            brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
-            brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
-            brick.transform.translation.z = self.brick_z_current
+            self.brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
+            self.brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+            self.brick.transform.translation.z = self.brick_z_current
             
         if self.state == State.CAUGHT:
-            brick.transform.translation.x = self.turtle_pose.x
-            brick.transform.translation.y = self.turtle_pose.y
-            brick.transform.translation.z = self.platform_h+0.05
+            self.brick.transform.translation.x = self.turtle_pose.x
+            self.brick.transform.translation.y = self.turtle_pose.y
+            self.brick.transform.translation.z = self.platform_h+0.05
             
         if self.state_brick == State.TILT:
             
             brick_wrt_platform = self.listen_to_platforrm()
-            # brick.transform.translation.x = brick_wrt_platform.transform.translation.x
-            # brick.transform.translation.y = brick_wrt_platform.transform.translation.y
-            # brick.transform.translation.z = brick_wrt_platform.transform.translation.z
             tilt_quant = quaternion_from_euler(0, 0.7, 0)
-            brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
-            brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
-            brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
-            brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+            self.brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
+            self.brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
+            self.brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
+            self.brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+            self.state = State.SLIDE
+            self.state_brick = State.SLIDE
+            self.time = 0
             
-        # quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
-        # brick.transform.rotation.x = quat_brick[0]
-        # brick.transform.rotation.y = quat_brick[1]
-        # brick.transform.rotation.z = quat_brick[2]
-        # brick.transform.rotation.w = quat_brick[3]
+        if self.state == State.SLIDE:
+            slide_hypotenuse = 0.5*9.8*self.time**2
+            self.time += 0.001
+            #self.brick.transform.translation.y = self.brick_y - (slide_hypotenuse/math.tan(0.7))
+            self.brick.transform.translation.z -= slide_hypotenuse#self.platform_h - slide_hypotenuse
+                
         time = self.get_clock().now().to_msg()
-        brick.header.stamp = time
-        self.broadcaster.sendTransform(brick)
+        self.brick.header.stamp = time
+        self.broadcaster.sendTransform(self.brick)
         self.make_brick()
         self.get_logger().info(f'State: {self.state}, Brick State: {self.state_brick}')
         if self.brick_init: # Dont publish brick until initialized
-            self.pub_brick.publish(self.brick)
+            self.pub_brick.publish(self.brick_marker)
              
     def timer_callback(self):
         """

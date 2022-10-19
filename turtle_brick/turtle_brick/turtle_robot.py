@@ -20,6 +20,8 @@ from sensor_msgs.msg import JointState
 # Accessed 10/9/2022
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
 
+# TODO bug when dropping brick from center
+
 def quaternion_from_euler(ai, aj, ak):
     ai /= 2.0
     aj /= 2.0
