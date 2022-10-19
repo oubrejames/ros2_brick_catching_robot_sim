@@ -175,7 +175,7 @@ class Arena(Node):
         #self.marker1.action = self.marker1.ADD
         self.brick.scale.x = 0.4
         self.brick.scale.y = 0.2
-        self.brick.scale.z = 0.2
+        self.brick.scale.z = 0.1
         self.brick.color.a = 1.0
         self.brick.color.b = 0.3
         self.brick.color.g = 0.3
@@ -301,11 +301,11 @@ class Arena(Node):
             
             # If you are dropping and above the platform stop at platform height
             # Else stop at ground
-            if self.state_brick == State.ABOVE_PLATFORM or self.state_brick == State.CAUGHT:
-                if self.brick_z_current >= self.platform_h+0.125:
+            if self.state_brick == State.ABOVE_PLATFORM:# or self.state_brick == State.CAUGHT:
+                if self.brick_z_current > self.platform_h+0.1:
                     print("HERE", self.platform_h)
-                    self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+                    self.time += 0.001
                 # else:
                 #     # self.state_brick = State.ON_PLATFORM
                 #     #self.brick_z_current = self.platform_h+0.1
