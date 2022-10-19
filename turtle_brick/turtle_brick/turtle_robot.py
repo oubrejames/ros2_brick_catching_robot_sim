@@ -223,8 +223,8 @@ class TurtleRobot(Node):
         
         if self.state == State.BACKHOME:
             # Tilt
-            # self.platform_tilt_rads = 0.7
-            # self.platform_tilt_vel = 0.3
+            self.platform_tilt_rads = 0.7
+            self.platform_tilt_vel = 0.3
             print("lol")
             # self.get_logger().info("TILLLLLLLLLLLLLLT")
             

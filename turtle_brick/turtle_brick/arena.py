@@ -1,3 +1,5 @@
+from lib2to3.pgen2 import driver
+from logging import getLogger
 import math
 import sys
 from turtle import tilt
@@ -101,7 +103,7 @@ class Arena(Node):
         self.declare_parameter("max_velocity", 0.4,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
-        
+        self.catch_once = True
         self.place = self.create_service(Place, "place", self.place_callback)
         self.drop = self.create_service(Empty, "drop", self.drop_callback)
         self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10)
@@ -119,12 +121,14 @@ class Arena(Node):
     def tilt_callback(self, msg):
         """"""   
         if msg.data == True:
-            # self.state_brick = State.TILT
+            self.state_brick = State.TILT
             print("lol")
             
     def brick_caught_callback(self, data):
-        if data.data:
+        if data.data and self.catch_once:
             self.state_brick = State.CAUGHT
+            self.state = State.CAUGHT
+            self.catch_once = False
     
     def listener_callback(self, msg):
         """Get turtle pose.
@@ -334,27 +338,32 @@ class Arena(Node):
         brick.header.frame_id = "world"
         brick.child_frame_id = "brick"
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-        brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
-        brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+
         if self.state == State.NEW_BRICK:
+            brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
+            brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
             brick.transform.translation.z = self.brick_z0
-        else:
+        elif self.state == State.DROP:
+            brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
+            brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
             brick.transform.translation.z = self.brick_z_current
             
-        if self.state_brick == State.CAUGHT:
+        if self.state == State.CAUGHT:
             brick.transform.translation.x = self.turtle_pose.x
             brick.transform.translation.y = self.turtle_pose.y
-            #brick.transform.translation.z = self.platform_h+0.1
+            brick.transform.translation.z = self.platform_h+0.05
             
         if self.state_brick == State.TILT:
+            
             brick_wrt_platform = self.listen_to_platforrm()
-            brick.transform.translation.x = brick_wrt_platform.transform.translation.x
-            brick.transform.translation.y = brick_wrt_platform.transform.translation.y
-            brick.transform.translation.z = brick_wrt_platform.transform.translation.z
-            brick.transform.rotation.x = brick_wrt_platform.transform.rotation.x
-            brick.transform.rotation.y = brick_wrt_platform.transform.rotation.y
-            brick.transform.rotation.z = brick_wrt_platform.transform.rotation.z
-            brick.transform.rotation.w = brick_wrt_platform.transform.rotation.w
+            # brick.transform.translation.x = brick_wrt_platform.transform.translation.x
+            # brick.transform.translation.y = brick_wrt_platform.transform.translation.y
+            # brick.transform.translation.z = brick_wrt_platform.transform.translation.z
+            tilt_quant = quaternion_from_euler(0, 0.7, 0)
+            brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
+            brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
+            brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
+            brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
             
         # quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         # brick.transform.rotation.x = quat_brick[0]
@@ -365,6 +374,7 @@ class Arena(Node):
         brick.header.stamp = time
         self.broadcaster.sendTransform(brick)
         self.make_brick()
+        self.get_logger().info(f'State: {self.state}, Brick State: {self.state_brick}')
         if self.brick_init: # Dont publish brick until initialized
             self.pub_brick.publish(self.brick)
              
