@@ -88,6 +88,10 @@ class TurtleRobot(Node):
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
         self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
+        #######
+        self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
+        
+        
         self.joints = JointState()
         self.platform_tilt_rads = 0.0
         self.stem_turn_rads = 0.0
@@ -147,6 +151,9 @@ class TurtleRobot(Node):
             # Are we at the center
             if (self.goal_pose.pose.position.x - self.turtle_init.x) < 0.01 and (self.goal_pose.pose.position.y - self.turtle_init.y) < 0.01:
                 self.state = State.BACKHOME
+                tilt_arena_bool = Bool()
+                tilt_arena_bool.data = True
+                self.pub_tilt_to_arena.publish(tilt_arena_bool)
                 
                 
         else:
@@ -216,9 +223,10 @@ class TurtleRobot(Node):
         
         if self.state == State.BACKHOME:
             # Tilt
-            self.platform_tilt_rads = 0.7
-            self.platform_tilt_vel = 0.3
-            self.get_logger().info("TILLLLLLLLLLLLLLT")
+            # self.platform_tilt_rads = 0.7
+            # self.platform_tilt_vel = 0.3
+            print("lol")
+            # self.get_logger().info("TILLLLLLLLLLLLLLT")
             
         
 

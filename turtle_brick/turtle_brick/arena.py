@@ -1,5 +1,6 @@
 import math
 import sys
+from turtle import tilt
 from geometry_msgs.msg import TransformStamped
 import numpy as np
 import rclpy
@@ -14,6 +15,10 @@ from std_srvs.srv import Empty
 from enum import Enum, auto
 from turtlesim.msg import Pose
 from std_msgs.msg import Bool
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from tf2_ros import TransformException
+
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -50,7 +55,8 @@ class State(Enum):
     NEW_BRICK = auto(),
     ON_PLATFORM = auto(),
     ABOVE_PLATFORM = auto(),
-    CAUGHT = auto()
+    CAUGHT = auto(),
+    TILT = auto()
     
 class Arena(Node):
     """
@@ -99,13 +105,23 @@ class Arena(Node):
         self.place = self.create_service(Place, "place", self.place_callback)
         self.drop = self.create_service(Empty, "drop", self.drop_callback)
         self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10)
-
+        self.sub_tilt = self.create_subscription(Bool, "tilt_in_arena", self.tilt_callback, 10)
 
         self.make_marker_array()
         
         self.broadcaster = TransformBroadcaster(self)
         self.tmr = self.create_timer(0.001, self.timer_callback) 
+        self.target_frame = self.declare_parameter(
+          'target_frame', 'brick').get_parameter_value().string_value
+        self.tf_buffer_platform = Buffer()
+        self.tf_listener_platform = TransformListener(self.tf_buffer_platform, self)
         
+    def tilt_callback(self, msg):
+        """"""   
+        if msg.data == True:
+            # self.state_brick = State.TILT
+            print("lol")
+            
     def brick_caught_callback(self, data):
         if data.data:
             self.state_brick = State.CAUGHT
@@ -114,6 +130,30 @@ class Arena(Node):
         """Get turtle pose.
         """
         self.turtle_pose = msg
+    
+    def listen_to_platforrm(self):
+        from_frame_rel = self.target_frame
+        to_frame_rel = 'platform'        
+        
+        try:
+            t = self.tf_buffer_platform.lookup_transform(
+                to_frame_rel,
+                from_frame_rel,
+                rclpy.time.Time())
+
+        except TransformException as ex:
+            self.get_logger().info(
+                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+            return
+        
+        # msg = Twist()
+        # scale_rotation_rate = 1.0
+        # msg.angular.z = scale_rotation_rate * math.atan2(
+        #     t.transform.translation.y,
+        #     t.transform.translation.x)
+ 
+        return t
+
         
     def place_callback(self, request, response):
         """TODO"""
@@ -262,7 +302,7 @@ class Arena(Node):
             # If you are dropping and above the platform stop at platform height
             # Else stop at ground
             if self.state_brick == State.ABOVE_PLATFORM or self.state_brick == State.CAUGHT:
-                if self.brick_z_current > self.platform_h+0.1:
+                if self.brick_z_current >= self.platform_h+0.125:
                     print("HERE", self.platform_h)
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
@@ -278,7 +318,14 @@ class Arena(Node):
         #     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
                 
 
-                
+    def brick_trig(self):
+        """Make a platform frame listener, 
+        get the platform angle,
+        make that the brick angle,
+        NEXT will make another function to move brick down hypotenuse,
+        detect when brick is off and reset it (also need to reset when hit ground)
+        """
+        
  
         
     def brick_tf_and_pub(self):
@@ -295,15 +342,25 @@ class Arena(Node):
             brick.transform.translation.z = self.brick_z_current
             
         if self.state_brick == State.CAUGHT:
-            brick.transform.translation.x = self.turtle_pose.x # TODO Will need to update when make service work
-            brick.transform.translation.y = self.turtle_pose.y # TODO Will need to update when make service work
+            brick.transform.translation.x = self.turtle_pose.x
+            brick.transform.translation.y = self.turtle_pose.y
             #brick.transform.translation.z = self.platform_h+0.1
             
-        quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
-        brick.transform.rotation.x = quat_brick[0]
-        brick.transform.rotation.y = quat_brick[1]
-        brick.transform.rotation.z = quat_brick[2]
-        brick.transform.rotation.w = quat_brick[3]
+        if self.state_brick == State.TILT:
+            brick_wrt_platform = self.listen_to_platforrm()
+            brick.transform.translation.x = brick_wrt_platform.transform.translation.x
+            brick.transform.translation.y = brick_wrt_platform.transform.translation.y
+            brick.transform.translation.z = brick_wrt_platform.transform.translation.z
+            brick.transform.rotation.x = brick_wrt_platform.transform.rotation.x
+            brick.transform.rotation.y = brick_wrt_platform.transform.rotation.y
+            brick.transform.rotation.z = brick_wrt_platform.transform.rotation.z
+            brick.transform.rotation.w = brick_wrt_platform.transform.rotation.w
+            
+        # quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
+        # brick.transform.rotation.x = quat_brick[0]
+        # brick.transform.rotation.y = quat_brick[1]
+        # brick.transform.rotation.z = quat_brick[2]
+        # brick.transform.rotation.w = quat_brick[3]
         time = self.get_clock().now().to_msg()
         brick.header.stamp = time
         self.broadcaster.sendTransform(brick)
@@ -326,9 +383,13 @@ class Arena(Node):
         self.drop_brick()
         
         self.brick_tf_and_pub()
+        if self.state_brick == State.TILT:
+            self.listen_to_platforrm()
+            
         brick_bool = Bool()
         brick_bool.data = self.brick_init
         self.pub_brick_status.publish(brick_bool)
+                    
         # print("State", self.state)
         #print("Brick state", self.state_brick)
 
