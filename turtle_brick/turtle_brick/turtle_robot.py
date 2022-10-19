@@ -193,6 +193,10 @@ class TurtleRobot(Node):
         self.joints.position = [self.platform_tilt_rads, self.stem_turn_rads, self.wheel_turn_rads, ]
         self.joints.velocity = [self.platform_tilt_vel, self.stem_turn_vel, self.wheel_turn_vel]
         self.pub_joints.publish(self.joints)
+     
+    def get_stem_angle(self):
+        """"""
+        heading = math.atan2(y,x)
         
     def timer_callback(self):
         # Define base_link frame 
@@ -202,6 +206,7 @@ class TurtleRobot(Node):
         self.joints.position = [float(self.stem_turn_rads), float(self.wheel_turn_rads), float(0.0), float(self.platform_tilt_rads)]
         self.joints.velocity = [float(self.stem_turn_vel), float(self.wheel_turn_vel), float(0.0), float(self.platform_tilt_vel)]
         self.pub_joints.publish(self.joints)
+        
         base_link = TransformStamped()
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"

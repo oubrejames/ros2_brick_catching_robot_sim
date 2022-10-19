@@ -370,10 +370,12 @@ class Arena(Node):
             self.time = 0
             
         if self.state == State.SLIDE:
-            slide_hypotenuse = 0.5*9.8*self.time**2
-            self.time += 0.001
-            #self.brick.transform.translation.y = self.brick_y - (slide_hypotenuse/math.tan(0.7))
-            self.brick.transform.translation.z -= slide_hypotenuse#self.platform_h - slide_hypotenuse
+            self.time += 0.01
+            diff = 0.5*9.8*self.time**2
+            #self.brick.transform.translation.z -= 0.001#
+            self.brick.transform.translation.z -= diff #self.platform_h - slide_hypotenuse
+            self.brick.transform.translation.x +=  (diff/math.tan(0.7))
+            
                 
         time = self.get_clock().now().to_msg()
         self.brick.header.stamp = time
