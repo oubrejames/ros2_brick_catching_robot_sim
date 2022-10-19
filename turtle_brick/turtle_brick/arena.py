@@ -49,8 +49,8 @@ class State(Enum):
     INIT = auto(),
     NEW_BRICK = auto(),
     ON_PLATFORM = auto(),
-    ABOVE_PLATFORM = auto()
-
+    ABOVE_PLATFORM = auto(),
+    CAUGHT = auto()
     
 class Arena(Node):
     """
@@ -98,6 +98,7 @@ class Arena(Node):
         
         self.place = self.create_service(Place, "place", self.place_callback)
         self.drop = self.create_service(Empty, "drop", self.drop_callback)
+        self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10)
 
 
         self.make_marker_array()
@@ -105,6 +106,10 @@ class Arena(Node):
         self.broadcaster = TransformBroadcaster(self)
         self.tmr = self.create_timer(0.001, self.timer_callback) 
         
+    def brick_caught_callback(self, data):
+        if data.data:
+            self.state_brick = State.CAUGHT
+    
     def listener_callback(self, msg):
         """Get turtle pose.
         """
@@ -248,7 +253,7 @@ class Arena(Node):
             if self.state_brick is not State.ABOVE_PLATFORM:  
                 if self.brick_z_current > 0.1:
                 # Check if on platform -> if yes stop brick at that height -> change state to on platform
-                    print("NOT HERE")
+                    #print("NOT HERE")
 
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
@@ -257,7 +262,7 @@ class Arena(Node):
             # Else stop at ground
             if self.state_brick == State.ABOVE_PLATFORM:
                 if self.brick_z_current > self.platform_h+0.1:
-                    print("HERE", self.platform_h)
+                    #print("HERE", self.platform_h)
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
                 else:
@@ -287,6 +292,10 @@ class Arena(Node):
         else:
             brick.transform.translation.z = self.brick_z_current
             
+        if self.state_brick == State.CAUGHT:
+            brick.transform.translation.x = self.turtle_pose.x # TODO Will need to update when make service work
+            brick.transform.translation.y = self.turtle_pose.y # TODO Will need to update when make service work
+            
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
         brick.transform.rotation.y = quat_brick[1]
@@ -311,12 +320,14 @@ class Arena(Node):
         # Publish arena walls
         self.pub_boundary.publish(self.marker_array)
         
-        
         self.drop_brick()
+        
         self.brick_tf_and_pub()
         brick_bool = Bool()
         brick_bool.data = self.brick_init
         self.pub_brick_status.publish(brick_bool)
+        # print("State", self.state)
+        print("Brick state", self.state_brick)
 
         
         

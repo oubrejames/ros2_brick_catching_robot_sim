@@ -94,6 +94,7 @@ class Catcher(Node):
         self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
         ##############
         self.pub_send_turtle_robot = self.create_publisher(Bool, "send_turtle_robot", 10)
+        self.pub_is_brick_caught = self.create_publisher(Bool, "brick_caught", 10)
         self.turtle_init = PoseStamped()
         self.turtle_init_flag = True
         self.brick_status = False
@@ -284,6 +285,9 @@ class Catcher(Node):
                 home.pose.position.x = self.turtle_init.x
                 home.pose.position.y = self.turtle_init.y
                 self.pub_goal_pose.publish(home) 
+                caught_flag = Bool()
+                caught_flag.data = True
+                self.pub_is_brick_caught.publish(caught_flag)
         
 def main():
     logger = rclpy.logging.get_logger('logger')
