@@ -24,9 +24,14 @@ def generate_launch_description():
             executable='arena',
             parameters=[turtle_param_path]
         )
-
+    catcher_node = Node(
+            package='turtle_brick',
+            executable='catcher',
+            parameters=[turtle_param_path]
+        )
     
 
     return LaunchDescription([
-        arena_node
+        arena_node,
+        catcher_node
     ])
