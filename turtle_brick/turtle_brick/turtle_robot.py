@@ -1,5 +1,6 @@
 from cmath import atan
 import math
+from re import S
 import sys
 from geometry_msgs.msg import TransformStamped
 import numpy as np
@@ -48,7 +49,8 @@ class State(Enum):
     """
     FALLING = auto(),
     INIT = auto(),
-    DETECTING = auto()
+    DETECTING = auto(),
+    BACKHOME = auto()
     
 class TurtleRobot(Node):
     """
@@ -89,7 +91,7 @@ class TurtleRobot(Node):
         ###########
         self.sub_go_robot = self.create_subscription(Bool, "send_turtle_robot", self.go_robot_callback, 10)
         self.go_robot_flag = False
-        
+        self.turtle_init_flag = True
         self.goal_pose = PoseStamped()
         self.base_offset = self.platform_h - 0.475
         self.odom_x = self.turtle_pose.x
@@ -115,6 +117,10 @@ class TurtleRobot(Node):
     def listener_callback_turtle_pose(self, msg):
         """Get turtle pose.
         """
+        if self.turtle_init_flag:
+            self.turtle_init = msg
+            self.turtle_init_flag = False
+            
         self.turtle_pose = msg
         
     def cmd_vel_to_goal(self):
@@ -127,10 +133,15 @@ class TurtleRobot(Node):
         cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         
-        if abs(x)<0.01 and abs(y)<0.01: # Stop the jiggle
+        if abs(x)<0.01 and abs(y)<0.01: # At goal, Stop the jiggle
             cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
                 angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
             self.pub_vel.publish(cmd_2_goal)
+            # Are we at the center
+            if (self.goal_pose.pose.position.x - self.turtle_init.x) < 0.01 and (self.goal_pose.pose.position.y - self.turtle_init.y) < 0.01:
+                self.state = State.BACKHOME
+                
+                
         else:
             self.pub_vel.publish(cmd_2_goal)
         
@@ -173,22 +184,18 @@ class TurtleRobot(Node):
         base_link.transform.rotation.y = quat_base[1]
         base_link.transform.rotation.z = quat_base[2]
         base_link.transform.rotation.w = quat_base[3]      
-       
-                
+               
         # don't forget to put a timestamp
         time = self.get_clock().now().to_msg()
         base_link.header.stamp = time
         
-        # wheel.header.stamp = time
-        # stem.header.stamp = time
-        # platform.header.stamp = time
-        # self.broadcaster.sendTransform(platform)
-        # self.broadcaster.sendTransform(wheel)
-        # self.broadcaster.sendTransform(stem)
-        
         self.broadcaster.sendTransform(base_link)
         if self.go_robot_flag:
             self.cmd_vel_to_goal()
+        
+        if self.state == State.BACKHOME:
+            # Tilt
+            self.get_logger().info("TILLLLLLLLLLLLLLT")
         
 
 def main():
