@@ -53,11 +53,11 @@ def generate_launch_description():
     #         ),
 
     # Depending on gui parameter, either launch joint_state_publisher or joint_state_publisher_gui
-    joint_state_publisher_node = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher'
-        #condition=UnlessCondition(LaunchConfiguration('gui'))
-    )
+    # joint_state_publisher_node = Node(
+    #     package='joint_state_publisher',
+    #     executable='joint_state_publisher'
+    #     #condition=UnlessCondition(LaunchConfiguration('gui'))
+    # )
 
     # joint_state_publisher_gui_node = Node(
     #     package='joint_state_publisher_gui',
@@ -78,7 +78,7 @@ def generate_launch_description():
         gui_arg,
         model_arg,
         rviz_arg,
-        joint_state_publisher_node,
+        # joint_state_publisher_node,
         # joint_state_publisher_gui_node,
         robot_state_publisher_node,
         rviz_node

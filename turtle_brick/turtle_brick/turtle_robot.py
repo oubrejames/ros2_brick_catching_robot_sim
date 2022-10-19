@@ -15,7 +15,7 @@ from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import Point, PoseStamped
 from enum import Enum, auto
 from std_msgs.msg import Bool
-
+from sensor_msgs.msg import JointState
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
@@ -87,7 +87,14 @@ class TurtleRobot(Node):
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
-        
+        self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
+        self.joints = JointState()
+        self.platform_tilt_rads = 0.0
+        self.stem_turn_rads = 0.0
+        self.wheel_turn_rads = 0.0
+        self.platform_tilt_vel = 0.0 
+        self.stem_turn_vel = 0.0 
+        self.wheel_turn_vel = 0.0
         ###########
         self.sub_go_robot = self.create_subscription(Bool, "send_turtle_robot", self.go_robot_callback, 10)
         self.go_robot_flag = False
@@ -170,8 +177,22 @@ class TurtleRobot(Node):
         # Broadcast TF
         self.tf_static_broadcaster.sendTransform(t)
         
+    def publish_joints(self):
+
+        self.joints.header.stamp = self.get_clock().now().to_msg()
+        self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
+        self.joints.position = [self.platform_tilt_rads, self.stem_turn_rads, self.wheel_turn_rads, ]
+        self.joints.velocity = [self.platform_tilt_vel, self.stem_turn_vel, self.wheel_turn_vel]
+        self.pub_joints.publish(self.joints)
+        
     def timer_callback(self):
         # Define base_link frame 
+        # self.publish_joints()
+        self.joints.header.stamp = self.get_clock().now().to_msg()
+        self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
+        self.joints.position = [float(self.stem_turn_rads), float(self.wheel_turn_rads), float(0.0), float(self.platform_tilt_rads)]
+        self.joints.velocity = [float(self.stem_turn_vel), float(self.wheel_turn_vel), float(0.0), float(self.platform_tilt_vel)]
+        self.pub_joints.publish(self.joints)
         base_link = TransformStamped()
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"
@@ -195,7 +216,10 @@ class TurtleRobot(Node):
         
         if self.state == State.BACKHOME:
             # Tilt
+            self.platform_tilt_rads = 0.7
+            self.platform_tilt_vel = 0.3
             self.get_logger().info("TILLLLLLLLLLLLLLT")
+            
         
 
 def main():
