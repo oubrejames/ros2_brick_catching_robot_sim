@@ -81,7 +81,7 @@ class TurtleRobot(Node):
                                ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
         self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
         
-        self.declare_parameter("max_velocity", 0.22,
+        self.declare_parameter("max_velocity", 0.4,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)

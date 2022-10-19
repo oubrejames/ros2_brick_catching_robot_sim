@@ -92,7 +92,7 @@ class Arena(Node):
                                ParameterDescriptor(description="The brick's acceleration due to gravity"))
         self.gravity  = self.get_parameter("gravity").get_parameter_value().double_value    
                
-        self.declare_parameter("max_velocity", 0.22,
+        self.declare_parameter("max_velocity", 0.4,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         
@@ -250,24 +250,26 @@ class Arena(Node):
 
         
         if self.state == State.DROP:
-            if self.state_brick is not State.ABOVE_PLATFORM:  
+            #if self.state_brick is not State.ABOVE_PLATFORM or self.state_brick is not State.CAUGHT: 
+            if self.state_brick == State.INIT: 
                 if self.brick_z_current > 0.1:
                 # Check if on platform -> if yes stop brick at that height -> change state to on platform
-                    #print("NOT HERE")
+                    print("NOT HERE")
 
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
             
             # If you are dropping and above the platform stop at platform height
             # Else stop at ground
-            if self.state_brick == State.ABOVE_PLATFORM:
+            if self.state_brick == State.ABOVE_PLATFORM or self.state_brick == State.CAUGHT:
                 if self.brick_z_current > self.platform_h+0.1:
-                    #print("HERE", self.platform_h)
+                    print("HERE", self.platform_h)
                     self.time += 0.001
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
-                else:
-                    # self.state_brick = State.ON_PLATFORM
-                    self.brick_z_current = self.platform_h+0.1
+                # else:
+                #     # self.state_brick = State.ON_PLATFORM
+                #     #self.brick_z_current = self.platform_h+0.1
+                #     print("Test")
             
         if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
             self.state_brick = State.ABOVE_PLATFORM    
@@ -295,7 +297,7 @@ class Arena(Node):
         if self.state_brick == State.CAUGHT:
             brick.transform.translation.x = self.turtle_pose.x # TODO Will need to update when make service work
             brick.transform.translation.y = self.turtle_pose.y # TODO Will need to update when make service work
-            brick.transform.translation.z = self.platform_h+0.1
+            #brick.transform.translation.z = self.platform_h+0.1
             
         quat_brick = quaternion_from_euler(float(0), float(0), float(0.0))
         brick.transform.rotation.x = quat_brick[0]
@@ -328,7 +330,7 @@ class Arena(Node):
         brick_bool.data = self.brick_init
         self.pub_brick_status.publish(brick_bool)
         # print("State", self.state)
-        print("Brick state", self.state_brick)
+        #print("Brick state", self.state_brick)
 
         
         
