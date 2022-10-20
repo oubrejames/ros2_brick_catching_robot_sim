@@ -1,36 +1,35 @@
-"""Test angular velocity calculate."""
+"""Test that launch file goes at 100 hz"""
 
-from turtle_brick.turtle_robot import calculate_angular_vel
+# Code based on 
+# https://github.com/ros2/launch_ros/blob/humble/launch_testing_ros/test/examples/talker_listener_launch_test.py
+# Accessed 10/19/2022
 
-
-def test_identity():
-    assert calculate_angular_vel(10, 5) == 2
-    
-    
 import unittest
 from launch import LaunchDescription
 from launch_ros.actions import Node
 import launch_testing
 import pytest
 import rclpy
-
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
-
+import time
+import unittest
+import launch_testing.actions
+import pytest
+import rclpy
+from sensor_msgs.msg import JointState
 
 @pytest.mark.rostest
 def generate_test_description():
-    in_out_action = Node(package="turtle_brick",
+    turtle_robot_action = Node(package="turtle_brick",
                          executable="turtle_robot",
                          )
     return (
         LaunchDescription([
-            in_out_action,
+            turtle_robot_action,
             launch_testing.actions.ReadyToTest()
             ]),
         # These are extra parameters that get passed to the test functions
         {
-            'in_out': in_out_action
+            'turtle_robot': turtle_robot_action
         }
     )
 
@@ -54,9 +53,9 @@ class TestME495Tf(unittest.TestCase):
         msgs_rx = []
 
         sub = self.node.create_subscription(
-            std_msgs.msg.String, # Change msg to twist
-            'talker_chatter', # CHange to cmd_vel
-            lambda msg: msgs_rx.append(msg), # keep
+            JointState, 
+            'joint_states', 
+            lambda msg: msgs_rx.append(msg), 
             10
         )
         try:
@@ -66,8 +65,8 @@ class TestME495Tf(unittest.TestCase):
             # it listens and calls the local function
             while time.time() < end_time:
                 rclpy.spin_once(self.node, timeout_sec=0.1)
-                if len(msgs_rx) > 2: #After adding two things the loop breaks
-                    break # Dont need
-        # ONce loop breaks we have shit in list and the amount of stuff in list corresponds to the time that it ran
-        # Do math -> get hz and check below
-        self.assertAlmostEqual # use to check if it was running a 100 hz
+        finally:
+            self.node.destroy_subscription(sub)
+        
+ 
+        self.assertAlmostEqual(len(msgs_rx),100)  # use to check if it was running a 100 hz

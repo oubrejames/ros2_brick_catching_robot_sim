@@ -1,17 +1,10 @@
-from lib2to3.pgen2 import driver
-from logging import getLogger
 import math
-from os import stat
-import sys
-from turtle import st, tilt
 from geometry_msgs.msg import TransformStamped
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point, PoseStamped
 from rcl_interfaces.msg import ParameterDescriptor
 from turtle_brick_interfaces.srv import Place
 from std_srvs.srv import Empty
@@ -28,6 +21,17 @@ from tf2_ros import TransformException
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
 
 def quaternion_from_euler(ai, aj, ak):
+    """Takes in Euler angles and converts them to quaternions. 
+    Function taken from link above.
+
+    Args:
+        ai (float): Roll angle.
+        aj (float): Pitch angle.
+        ak (float): Yaw angle.
+
+    Returns:
+        float array: Array of quaternion angles.
+    """
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -64,20 +68,23 @@ class State(Enum):
     RESET = auto()
     
 class Arena(Node):
-    """
-    Publishes markers to denote the boundaries of the environment in rviz. 
-    Publishes the brick frame at the location of the brick and a marker to show its location in rviz
-    offers a service called place (of custom type) that moves the brick to  a pecified location
-    offers a service called drop that causes the brick to fall in gravity according to specified rule (on website)
+    """ Node responsible for simulating environment. 
+    Publishes markers to denote the boundaries of the environment in rviz over the visualization_marker_array topic. 
+    Publishes a marker over the visualization_marker topic to represent the brick. 
+    Publishes a boolean to the brick_status topic to let other nodes know if the brick has spawned. 
+    Publishes a boolean to the reset_sim topic to indicate when the other nodes must reset.
+    Subscribes to the turtle1/pose topic to keep up with the pose of the robot.
+    Subscribes to the brick_caught topic to know whether or not the brick has been caught by the platform.
+    Subscribes to the tilt_in_arena topic to know when the platform tilts to create associated pyhics for the brick. 
+    Braodcasts the brick frame at the location of the brick relative to the world frame.
+    Offers a service called place (of custom type) that moves the brick to a pecified location.
+    Offers a service called drop that causes the brick to fall in gravity.
     """
 
     def __init__(self):
-        """TODO -
-
-        Args:
-            transformation (_type_): _description_
+        """Initialize intitial variables, states, publishers and subscribers.
         """
-        # Initialize node with name turtle_robot.
+        # Initialize node with name arena.
         super().__init__('arena')
         self.state = State.INIT
         self.state_brick = State.INIT
@@ -86,7 +93,6 @@ class Arena(Node):
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
         self.pub_reset = self.create_publisher(Bool, "reset_sim", 10) 
         self.time = 0.0
-        #self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
         self.brick_x = 12.0 # Made 12 so that brick frame always spawns outside of arena originally
         self.brick_y = 12.0
         self.brick_z0 = 8.0
@@ -131,13 +137,18 @@ class Arena(Node):
         self.tmr = self.create_timer(0.004, self.timer_callback) 
         
     def tilt_callback(self, msg):
-        """"""   
+        """Callback to read the tilt message.
+        """   
         if msg.data == True:
             self.state_brick = State.TILT
             self.state = State.TILT
-            print("lol")
             
     def brick_caught_callback(self, data):
+        """Callback to read brick_caught topic to see if the brick has been caught.
+
+        Args:
+            data (Bool): Boolean that describes if the brick has been caught
+        """
         if data.data and self.catch_once:
             self.state_brick = State.CAUGHT
             self.state = State.CAUGHT
@@ -149,6 +160,11 @@ class Arena(Node):
         self.turtle_pose = msg
     
     def listen_to_platforrm(self):
+        """Listener for brick to platform tf
+
+        Returns:
+            Buffer: relationship between brick and platform frames
+        """
         from_frame_rel = self.target_frame
         to_frame_rel = 'platform'        
         
@@ -162,17 +178,19 @@ class Arena(Node):
             self.get_logger().info(
                 f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
             return
-        
-        # msg = Twist()
-        # scale_rotation_rate = 1.0
-        # msg.angular.z = scale_rotation_rate * math.atan2(
-        #     t.transform.translation.y,
-        #     t.transform.translation.x)
- 
+         
         return t
         
     def place_callback(self, request, response):
-        """TODO"""
+        """Callback for place service. Puts brick at a specified location
+
+        Args:
+            request (Place): Coordinates of brick 
+            response (Place): Null
+
+        Returns:
+            Place: Null
+        """
         self.state = State.NEW_BRICK
         self.brick_x = request.x
         self.brick_y = request.y 
@@ -183,12 +201,13 @@ class Arena(Node):
         return response         
         
     def make_brick(self):
+        """Create the marker to publish as the brick
+        """
         self.brick_marker = Marker()
         self.brick_marker.header.frame_id = "/brick"
         self.brick_marker.header.stamp = self.get_clock().now().to_msg()
         self.brick_marker.type = self.brick_marker.CUBE
         self.brick_marker.id =5
-        #self.marker1.action = self.marker1.ADD
         self.brick_marker.scale.x = 0.4
         self.brick_marker.scale.y = 0.2
         self.brick_marker.scale.z = 0.1
@@ -206,12 +225,13 @@ class Arena(Node):
         self.brick_marker.pose.position.z = 0.0
         
     def make_markers(self):
-        self.marker1 = Marker()#self.brick
+        """Create the 4 markers used as walls of the arena
+        """
+        self.marker1 = Marker()
         self.marker1.header.frame_id = "/world"
         self.marker1.header.stamp = self.get_clock().now().to_msg()
         self.marker1.type = self.marker1.CUBE
         self.marker1.id =1
-        #self.marker1.action = self.marker1.ADD
         self.marker1.scale.x = 11.0
         self.marker1.scale.y = 0.2
         self.marker1.scale.z = 1.0
@@ -230,7 +250,6 @@ class Arena(Node):
         self.marker2.header.stamp = self.get_clock().now().to_msg()
         self.marker2.type = self.marker2.CUBE
         self.marker2.id =2
-        #self.marker2.action = self.marker2.ADD
         self.marker2.scale.x = 11.0
         self.marker2.scale.y = 0.2
         self.marker2.scale.z = 1.0
@@ -249,7 +268,6 @@ class Arena(Node):
         self.marker3.header.stamp = self.get_clock().now().to_msg()
         self.marker3.type = self.marker3.CUBE
         self.marker3.id =3
-        #self.marker3.action = self.marker3.ADD
         self.marker3.scale.x = 11.0
         self.marker3.scale.y = 0.2
         self.marker3.scale.z = 1.0
@@ -268,7 +286,6 @@ class Arena(Node):
         self.marker4.header.stamp = self.get_clock().now().to_msg()
         self.marker4.type = self.marker4.CUBE
         self.marker4.id =4
-        #self.marker4.action = self.marker4.ADD
         self.marker4.scale.x = 11.0
         self.marker4.scale.y = 0.2
         self.marker4.scale.z = 1.0
@@ -291,27 +308,26 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker4)
           
     def drop_callback(self, request, response):
+        """Service callback to change to drop state
+
+        Args:
+            request (Empty): triggers callback
+            response (Empty): Nulll
+
+        Returns:
+            Empty: Null
+        """
         self.state = State.DROP
         return response
     
     def drop_brick(self):
-        # Control states for keeping track of brick
-        #print("Brick state", self.state_brick)
-        # print("Brick x", self.brick_x)
-        # print("Brick y", self.brick_y)
-        
-        # print("Turtel pose y", self.turtle_pose.y)
-        # print("X diff", (self.turtle_pose.x - self.brick_x) )
-        # print("Y diff",(self.turtle_pose.y - self.brick_y) )
-  
-        
+        """Function to handle the pyhsics of dropping the brick
+        """
         if self.state == State.DROP:
             self.brick_init = True
-            #if self.state_brick is not State.ABOVE_PLATFORM or self.state_brick is not State.CAUGHT: 
             if self.state_brick == State.INIT: 
                 if self.brick_z_current > 0.1:
                 # Check if on platform -> if yes stop brick at that height -> change state to on platform
-                    print("NOT HERE")
 
                     self.time += 0.004
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
@@ -320,31 +336,26 @@ class Arena(Node):
             
             # If you are dropping and above the platform stop at platform height
             # Else stop at ground
-            if self.state_brick == State.ABOVE_PLATFORM:# or self.state_brick == State.CAUGHT:
+            if self.state_brick == State.ABOVE_PLATFORM:
                 if self.brick_z_current > self.platform_h+0.1:
-                    print("HERE", self.platform_h)
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
                     self.time += 0.004
                 else:
-                #     # self.state_brick = State.ON_PLATFORM
                     self.brick_z_current = self.platform_h+0.1
-                #     print("Test")
             
         if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
             self.state_brick = State.ABOVE_PLATFORM    
    
     def brick_tf_and_pub(self):
-        # # # Define brick frame 
-
-        # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-        
+        """Calculate the brick tf based off the state and publish it
+        """        
         if self.state == State.NEW_BRICK:
-            self.brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
-            self.brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+            self.brick.transform.translation.x = self.brick_x 
+            self.brick.transform.translation.y = self.brick_y 
             self.brick.transform.translation.z = self.brick_z0
         elif self.state == State.DROP:
-            self.brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
-            self.brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
+            self.brick.transform.translation.x = self.brick_x 
+            self.brick.transform.translation.y = self.brick_y 
             self.brick.transform.translation.z = self.brick_z_current
             
         if self.state == State.CAUGHT:
@@ -353,13 +364,11 @@ class Arena(Node):
             self.brick.transform.translation.z = self.platform_h+0.05
             
         if self.state_brick == State.TILT:
-            
-            brick_wrt_platform = self.listen_to_platforrm()
             tilt_quant = quaternion_from_euler(0, 0.7, 0)
-            self.brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
-            self.brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
-            self.brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
-            self.brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+            self.brick.transform.rotation.x = tilt_quant[0]
+            self.brick.transform.rotation.y = tilt_quant[1]
+            self.brick.transform.rotation.z = tilt_quant[2]
+            self.brick.transform.rotation.w = tilt_quant[3]
             self.state = State.SLIDE
             self.state_brick = State.SLIDE
             self.time = 0
@@ -368,8 +377,7 @@ class Arena(Node):
             if self.brick.transform.translation.z > (0.3+0.2): #platform radius + brick length/2
                 self.time += 0.04
                 diff = 0.5*9.8*self.time**2
-                #self.brick.transform.translation.z -= 0.001#
-                self.brick.transform.translation.z -= diff #self.platform_h - slide_hypotenuse
+                self.brick.transform.translation.z -= diff 
                 self.brick.transform.translation.x +=  (diff/math.tan(0.7))
             else:
                 self.state =State.RESET
@@ -384,15 +392,16 @@ class Arena(Node):
             self.pub_brick.publish(self.brick_marker)
              
     def reset_the_brick(self):
-        """"""
+        """Reset the brick to its starting location and reset all states so simulation can run again.
+        """
         self.brick.transform.translation.x = self.brick_x
         self.brick.transform.translation.y = self.brick_y
         self.brick.transform.translation.z = self.brick_z0
         tilt_quant = quaternion_from_euler(0, 0, 0)
-        self.brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
-        self.brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
-        self.brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
-        self.brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+        self.brick.transform.rotation.x = tilt_quant[0]
+        self.brick.transform.rotation.y = tilt_quant[1]
+        self.brick.transform.rotation.z = tilt_quant[2]
+        self.brick.transform.rotation.w = tilt_quant[3]
         
         self.brick_tf_and_pub()
         self.state = State.NEW_BRICK
@@ -402,10 +411,9 @@ class Arena(Node):
         self.brick_init = False
         self.pub_reset.publish(self.reset_bool)
         self.reset_bool.data = False
-        #self.__init__()
             
     def timer_callback(self):
-        """
+        """Function to interate every time the timer is called.
         """
         # Publish arena walls
         self.pub_boundary.publish(self.marker_array)
@@ -421,29 +429,12 @@ class Arena(Node):
         self.pub_brick_status.publish(brick_bool)
                     
         if self.state == State.RESET:
-            self.reset_the_brick() # Reset brick this aint work
-        # self.get_logger().info(f'State      : {self.state}')
-        # self.get_logger().info(f'Brick State: {self.state_brick}')
-        #self.pub_reset.publish(False)
+            self.reset_the_brick() 
 
 
         
         
 def main():
-    logger = rclpy.logging.get_logger('logger')
-
-    # # obtain parameters from command line arguments
-    # if len(sys.argv) != 8:
-    #     logger.info('Invalid number of parameters. Usage: \n'
-    #                 '$ ros2 run learning_tf2_py static_turtle_tf2_broadcaster'
-    #                 'child_frame_name x y z roll pitch yaw')
-    #     sys.exit(1)
-
-    # if sys.argv[1] == 'world':
-    #     logger.info('Your static turtle name cannot be "world"')
-    #     sys.exit(2)
-
-    # pass parameters and initialize node
     rclpy.init()
     node = Arena()
     try:
