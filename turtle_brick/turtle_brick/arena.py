@@ -303,9 +303,10 @@ class Arena(Node):
         # print("Turtel pose y", self.turtle_pose.y)
         # print("X diff", (self.turtle_pose.x - self.brick_x) )
         # print("Y diff",(self.turtle_pose.y - self.brick_y) )
-
+  
         
         if self.state == State.DROP:
+            self.brick_init = True
             #if self.state_brick is not State.ABOVE_PLATFORM or self.state_brick is not State.CAUGHT: 
             if self.state_brick == State.INIT: 
                 if self.brick_z_current > 0.1:
@@ -396,6 +397,7 @@ class Arena(Node):
         self.state_brick = State.INIT
         self.catch_once = True
         self.reset_bool.data = True
+        self.brick_init = False
         self.pub_reset.publish(self.reset_bool)
         self.reset_bool.data = False
         #self.__init__()
