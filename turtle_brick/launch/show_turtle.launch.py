@@ -8,6 +8,10 @@ from launch.substitutions import Command, LaunchConfiguration
 
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+import launch
+from launch.actions import LogInfo, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import LaunchConfigurationEquals
 
 # Modified code from ROS2 urdf tutorial source code 
 # Accessed 10/9/2022
@@ -35,6 +39,11 @@ def generate_launch_description():
     # )
     
 
+    # DeclareLaunchArgument('use_jsp', default_value='v1'),
+    # LogInfo(msg=LaunchConfiguration('bag_version')),
+    # LogInfo(msg='Version 1', condition=LaunchConfigurationEquals('bag_version', 'v1')),
+    # LogInfo(msg='Version 2', condition=LaunchConfigurationEquals('bag_version', 'v2'))
+    
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',

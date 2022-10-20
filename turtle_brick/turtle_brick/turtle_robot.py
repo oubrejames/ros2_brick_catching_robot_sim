@@ -24,9 +24,18 @@ from nav_msgs.msg import Odometry
 # Accessed 10/9/2022
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
 
-# TODO bug when dropping brick from center
-# TODO publish cmd_vel always
+
 def quaternion_from_euler(ai, aj, ak):
+    """Takes in Euler angles and converts them to quaternions.
+
+    Args:
+        ai (float): Roll angle.
+        aj (float): Pitch angle.
+        ak (float): Yaw angle.
+
+    Returns:
+        float array: Array of quaternion angles.
+    """
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -49,7 +58,6 @@ def quaternion_from_euler(ai, aj, ak):
 
     return q
 
-
 class State(Enum):
     """ States to keep track of where the system is.
     """
@@ -62,53 +70,31 @@ class State(Enum):
     RESET = auto()
     
 class TurtleRobot(Node):
-    """
-    Broadcast transforms that never change.
-
-    This example publishes transforms from `world` to a static turtle frame.
-    The transforms are only published once at startup, and are constant for all
-    time.
+    """Node for controlling the turtle's actions. Broadcasts the location of the base_link 
+    frame relative to the odom frame. Publishes to cmd_vel to actually move the robot. Publishes 
+    joint states to the joint_states topic. Publishes a boolean to the tilt topic to indicate
+    to other nodes when the platform is tilting. Publishes the odometry of the robot to the 
+    odom topic. Subscribes to the turtle1/pose topic to keep up with the pose of the robot.
+    Subscribes to the goal_pose topic to know where the goal point is. Subscribes to the tilt 
+    topic to get the tilting angle for the platform of the robot. Subscribes to the reset_sim 
+    and brick_caught boolean topics to know when to reset its states and when the brick is 
+    caught on the platform.
     """
 
     def __init__(self):
-        """TODO - update comments so not just from ros website
-
-        Args:
-            transformation (_type_): _description_
+        """Initialize intitial variables, states, publishers and subscribers.
         """
         # Initialize node with name turtle_robot.
         super().__init__('turtle_robot')
+        
+        # Initial states and variables
         self.turtle_pose = Pose()
         self.state = State.INIT
-        # self.turtle_pose.x = 5.5
-        # self.turtle_pose.y = 5.5
-        self.sub_turtle_pose = self.create_subscription(Pose, "turtle1/pose", self.listener_callback_turtle_pose, 10)
-        self.sub_goal_pose = self.create_subscription(PoseStamped, "goal_pose", self.listener_callback_goal_pose, 10)
-        self.declare_parameter("wheel_radius", 0.2,
-                               ParameterDescriptor(description="The radius of the turtle robot wheel in meters"))
-        self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value
+        self.tilt_degrees = 0.7 # Default tilt degree in rads
+        self.caught_flag = False # Flag for if the brick is caught
+        self.time = 0 # Time counter
         
-        self.declare_parameter("platform_height", 1.3,
-                               ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
-        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
-        
-        self.declare_parameter("max_velocity", 0.4,
-                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
-        
-        self.tilt_degrees = 0.7
-        self.tilt_sub = self.create_subscription(Tilt, "tilt", self.tilt_callback, 10)
-        
-        self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
-        self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
-        self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
-        self.sub_reset = self.create_subscription(Bool, "reset_sim", self.reset_callback, 10)
-        self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10)
-        self.caught_flag = False
-        #######
-        self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
-        self.odom_publisher = self.create_publisher(Odometry, "odom", 10)
-        self.time = 0
-        
+        # Initial joint state values
         self.joints = JointState()
         self.platform_tilt_rads = 0.0
         self.stem_turn_rads = 0.0
@@ -116,8 +102,33 @@ class TurtleRobot(Node):
         self.platform_tilt_vel = 0.0 
         self.stem_turn_vel = 0.0 
         self.wheel_turn_vel = 0.0
-        ###########
+        
+        # Parameters
+        self.declare_parameter("wheel_radius", 0.2,
+                               ParameterDescriptor(description="The radius of the turtle robot wheel in meters"))
+        self.wheel_radius  = self.get_parameter("wheel_radius").get_parameter_value().double_value    
+        self.declare_parameter("platform_height", 1.3,
+                               ParameterDescriptor(description="The height of the turtle robot's platform in meters"))
+        self.platform_h  = self.get_parameter("platform_height").get_parameter_value().double_value  
+        
+        self.declare_parameter("max_velocity", 0.4,
+                               ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
+
+        # Publishers
+        self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
+        self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
+        self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
+        self.odom_publisher = self.create_publisher(Odometry, "odom", 10)
+        
+        # Subscribers
+        self.sub_turtle_pose = self.create_subscription(Pose, "turtle1/pose", self.listener_callback_turtle_pose, 10)
+        self.sub_goal_pose = self.create_subscription(PoseStamped, "goal_pose", self.listener_callback_goal_pose, 10)
+        self.tilt_sub = self.create_subscription(Tilt, "tilt", self.tilt_callback, 10)
+        self.sub_reset = self.create_subscription(Bool, "reset_sim", self.reset_callback, 10)
+        self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10) 
         self.sub_go_robot = self.create_subscription(Bool, "send_turtle_robot", self.go_robot_callback, 10)
+        
         self.go_robot_flag = False
         self.turtle_init_flag = True
         self.goal_pose = PoseStamped()
@@ -128,11 +139,10 @@ class TurtleRobot(Node):
         self.tf_static_broadcaster = StaticTransformBroadcaster(self)
         self.make_transforms()
         
-        ### Below from in_out.py ###
-        # create the broadcaster
+        # Create the broadcaster
         self.broadcaster = TransformBroadcaster(self)
+        
         # Create a timer to do the rest of the transforms
-
         self.tmr = self.create_timer(0.004, self.timer_callback)
         
     def brick_caught_callback(self, data):
