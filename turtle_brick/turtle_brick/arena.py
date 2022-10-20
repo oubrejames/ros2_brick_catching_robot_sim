@@ -3,7 +3,7 @@ from logging import getLogger
 import math
 from os import stat
 import sys
-from turtle import tilt
+from turtle import st, tilt
 from geometry_msgs.msg import TransformStamped
 import numpy as np
 import rclpy
@@ -60,7 +60,8 @@ class State(Enum):
     ABOVE_PLATFORM = auto(),
     CAUGHT = auto(),
     TILT = auto(),
-    SLIDE = auto()
+    SLIDE = auto(),
+    RESET = auto()
     
 class Arena(Node):
     """
@@ -163,7 +164,6 @@ class Arena(Node):
         #     t.transform.translation.x)
  
         return t
-
         
     def place_callback(self, request, response):
         """TODO"""
@@ -323,26 +323,12 @@ class Arena(Node):
             
         if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
             self.state_brick = State.ABOVE_PLATFORM    
-        # elif self.state == State.DROP and self.brick_z_current > 0.1:
-        #     self.time += 0.001
-        #     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
-                
-
-    def brick_trig(self):
-        """Make a platform frame listener, 
-        get the platform angle,
-        make that the brick angle,
-        NEXT will make another function to move brick down hypotenuse,
-        detect when brick is off and reset it (also need to reset when hit ground)
-        """
-        
- 
-        
+   
     def brick_tf_and_pub(self):
         # # # Define brick frame 
 
         # # # TODO update this to iwhatever the brick needs to be, starting it off as just 6 m above world frame
-
+        
         if self.state == State.NEW_BRICK:
             self.brick.transform.translation.x = self.brick_x # TODO Will need to update when make service work
             self.brick.transform.translation.y = self.brick_y # TODO Will need to update when make service work
@@ -370,11 +356,14 @@ class Arena(Node):
             self.time = 0
             
         if self.state == State.SLIDE:
-            self.time += 0.01
-            diff = 0.5*9.8*self.time**2
-            #self.brick.transform.translation.z -= 0.001#
-            self.brick.transform.translation.z -= diff #self.platform_h - slide_hypotenuse
-            self.brick.transform.translation.x +=  (diff/math.tan(0.7))
+            if self.brick.transform.translation.z > (0.3+0.2): #platform radius + brick length/2
+                self.time += 0.01
+                diff = 0.5*9.8*self.time**2
+                #self.brick.transform.translation.z -= 0.001#
+                self.brick.transform.translation.z -= diff #self.platform_h - slide_hypotenuse
+                self.brick.transform.translation.x +=  (diff/math.tan(0.7))
+            else:
+                self.state =State.RESET
             
                 
         time = self.get_clock().now().to_msg()
@@ -407,6 +396,11 @@ class Arena(Node):
         brick_bool.data = self.brick_init
         self.pub_brick_status.publish(brick_bool)
                     
+        if self.state == State.RESET:
+            reset_brick = Place()
+            reset_brick.x = self.brick_x
+            reset_brick.y = self.brick_y
+            self.place_callback(reset_brick) # Reset brick this aint work
         # print("State", self.state)
         #print("Brick state", self.state_brick)
 

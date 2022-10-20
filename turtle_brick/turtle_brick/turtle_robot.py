@@ -21,7 +21,7 @@ from sensor_msgs.msg import JointState
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
 
 # TODO bug when dropping brick from center
-
+# TODO publish cmd_vel always
 def quaternion_from_euler(ai, aj, ak):
     ai /= 2.0
     aj /= 2.0
@@ -196,7 +196,10 @@ class TurtleRobot(Node):
      
     def get_stem_angle(self):
         """"""
+        x = self.goal_pose.pose.position.x - self.turtle_pose.x
+        y = self.goal_pose.pose.position.y - self.turtle_pose.y
         heading = math.atan2(y,x)
+        self.stem_turn_rads = heading
         
     def timer_callback(self):
         # Define base_link frame 
@@ -205,7 +208,7 @@ class TurtleRobot(Node):
         self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
         self.joints.position = [float(self.stem_turn_rads), float(self.wheel_turn_rads), float(0.0), float(self.platform_tilt_rads)]
         self.joints.velocity = [float(self.stem_turn_vel), float(self.wheel_turn_vel), float(0.0), float(self.platform_tilt_vel)]
-        self.pub_joints.publish(self.joints)
+        self.pub_joints.publish(self.joints)          
         
         base_link = TransformStamped()
         base_link.header.frame_id = "odom"
@@ -226,6 +229,7 @@ class TurtleRobot(Node):
         
         self.broadcaster.sendTransform(base_link)
         if self.go_robot_flag:
+            self.get_stem_angle()
             self.cmd_vel_to_goal()
         
         if self.state == State.BACKHOME:
