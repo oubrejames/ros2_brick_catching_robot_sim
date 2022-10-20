@@ -96,7 +96,8 @@ class TurtleRobot(Node):
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
         self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
         self.sub_reset = self.create_subscription(Bool, "reset_sim", self.reset_callback, 10)
-
+        self.is_brick_caught = self.create_subscription(Bool, "brick_caught", self.brick_caught_callback, 10)
+        self.caught_flag = False
         #######
         self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
         self.time = 0
@@ -126,6 +127,10 @@ class TurtleRobot(Node):
         # Create a timer to do the rest of the transforms
 
         self.tmr = self.create_timer(0.004, self.timer_callback)
+        
+    def brick_caught_callback(self, data):
+        self.caught_flag = data.data
+        
     def reset_callback(self, data):
         """_summary_
 
@@ -134,7 +139,15 @@ class TurtleRobot(Node):
         """
         self.platform_tilt_rads = 0
         self.state = State.INIT
-        self.__init__()
+        self.caught_flag = False
+        self.platform_tilt_rads = 0.0
+        self.stem_turn_rads = 0.0
+        self.wheel_turn_rads = 0.0
+        self.platform_tilt_vel = 0.0 
+        self.stem_turn_vel = 0.0 
+        self.wheel_turn_vel = 0.0
+        self.go_robot_flag = False
+        #self.__init__()
         #self.go_robot_flag = False
         
     def go_robot_callback(self, data):
@@ -173,7 +186,8 @@ class TurtleRobot(Node):
                 self.state = State.BACKHOME
                 tilt_arena_bool = Bool()
                 tilt_arena_bool.data = True
-                self.pub_tilt_to_arena.publish(tilt_arena_bool)
+                if self.caught_flag:
+                    self.pub_tilt_to_arena.publish(tilt_arena_bool)
         else:
             self.state = State.MOVING
             self.pub_vel.publish(cmd_2_goal)
