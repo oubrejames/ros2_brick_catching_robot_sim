@@ -374,15 +374,20 @@ class Arena(Node):
         if self.brick_init: # Dont publish brick until initialized
             self.pub_brick.publish(self.brick_marker)
              
+    def reset_the_brick(self):
+        """"""
+        self.brick.transform.translation.x = self.brick_x
+        self.brick.transform.translation.y = self.brick_y
+        self.brick.transform.translation.z = self.brick_z0
+        tilt_quant = quaternion_from_euler(0, 0, 0)
+        self.brick.transform.rotation.x = tilt_quant[0]# brick_wrt_platform.transform.rotation.x
+        self.brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
+        self.brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
+        self.brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+            
     def timer_callback(self):
         """
         """
-        
-        # goal = PoseStamped()
-        # goal.pose.position.x = float(self.brick_x)
-        # goal.pose.position.y = float(self.brick_y)
-        # goal.pose.position.z = float(self.platform_h)
-
         # Publish arena walls
         self.pub_boundary.publish(self.marker_array)
         
@@ -397,12 +402,8 @@ class Arena(Node):
         self.pub_brick_status.publish(brick_bool)
                     
         if self.state == State.RESET:
-            reset_brick = Place()
-            reset_brick.x = self.brick_x
-            reset_brick.y = self.brick_y
-            self.place_callback(reset_brick) # Reset brick this aint work
-        # print("State", self.state)
-        #print("Brick state", self.state_brick)
+            self.reset_the_brick() # Reset brick this aint work
+
 
         
         
