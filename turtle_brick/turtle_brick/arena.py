@@ -122,7 +122,7 @@ class Arena(Node):
           'target_frame', 'brick').get_parameter_value().string_value
         self.tf_buffer_platform = Buffer()
         self.tf_listener_platform = TransformListener(self.tf_buffer_platform, self)
-        self.tmr = self.create_timer(0.001, self.timer_callback) 
+        self.tmr = self.create_timer(0.004, self.timer_callback) 
         
     def tilt_callback(self, msg):
         """"""   
@@ -306,7 +306,7 @@ class Arena(Node):
                 # Check if on platform -> if yes stop brick at that height -> change state to on platform
                     print("NOT HERE")
 
-                    self.time += 0.001
+                    self.time += 0.004
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
             
             # If you are dropping and above the platform stop at platform height
@@ -315,7 +315,7 @@ class Arena(Node):
                 if self.brick_z_current > self.platform_h+0.1:
                     print("HERE", self.platform_h)
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
-                    self.time += 0.001
+                    self.time += 0.004
                 # else:
                 #     # self.state_brick = State.ON_PLATFORM
                 #     #self.brick_z_current = self.platform_h+0.1
@@ -357,7 +357,7 @@ class Arena(Node):
             
         if self.state == State.SLIDE:
             if self.brick.transform.translation.z > (0.3+0.2): #platform radius + brick length/2
-                self.time += 0.01
+                self.time += 0.04
                 diff = 0.5*9.8*self.time**2
                 #self.brick.transform.translation.z -= 0.001#
                 self.brick.transform.translation.z -= diff #self.platform_h - slide_hypotenuse

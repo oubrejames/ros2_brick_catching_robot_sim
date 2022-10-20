@@ -43,7 +43,7 @@
   </link>
 
   <joint name="spin_wheel" type="continuous">
-    <axis xyz="0 0 1"/>
+    <axis xyz="0 1 0"/>
     <parent link="stem"/>
     <child link="wheel"/>
     <origin rpy="0 ${pi/2} 0" xyz="0 0 -${stem_length/2+wheel_radius}"/>

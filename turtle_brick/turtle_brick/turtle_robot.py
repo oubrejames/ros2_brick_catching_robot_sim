@@ -52,7 +52,9 @@ class State(Enum):
     FALLING = auto(),
     INIT = auto(),
     DETECTING = auto(),
-    BACKHOME = auto()
+    BACKHOME = auto(),
+    MOVING = auto(),
+    STOPPED = auto()
     
 class TurtleRobot(Node):
     """
@@ -92,7 +94,7 @@ class TurtleRobot(Node):
         self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
         #######
         self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
-        
+        self.time = 0
         
         self.joints = JointState()
         self.platform_tilt_rads = 0.0
@@ -149,6 +151,7 @@ class TurtleRobot(Node):
         if abs(x)<0.01 and abs(y)<0.01: # At goal, Stop the jiggle
             cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
                 angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
+            self.state = State.STOPPED
             self.pub_vel.publish(cmd_2_goal)
             # Are we at the center
             if (self.goal_pose.pose.position.x - self.turtle_init.x) < 0.01 and (self.goal_pose.pose.position.y - self.turtle_init.y) < 0.01:
@@ -156,9 +159,8 @@ class TurtleRobot(Node):
                 tilt_arena_bool = Bool()
                 tilt_arena_bool.data = True
                 self.pub_tilt_to_arena.publish(tilt_arena_bool)
-                
-                
         else:
+            self.state = State.MOVING
             self.pub_vel.publish(cmd_2_goal)
         
     def make_transforms(self):
@@ -200,10 +202,17 @@ class TurtleRobot(Node):
         y = self.goal_pose.pose.position.y - self.turtle_pose.y
         heading = math.atan2(y,x)
         self.stem_turn_rads = heading
-        
+
+    def wheel_spin(self):
+        """"""
+        if self.state == State.MOVING:
+            self.wheel_turn_vel = self.max_velocity / self.wheel_radius
+            self.wheel_turn_rads = self.max_velocity * self.time
+
     def timer_callback(self):
         # Define base_link frame 
         # self.publish_joints()
+        self.time += 0.01
         self.joints.header.stamp = self.get_clock().now().to_msg()
         self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
         self.joints.position = [float(self.stem_turn_rads), float(self.wheel_turn_rads), float(0.0), float(self.platform_tilt_rads)]
@@ -230,6 +239,7 @@ class TurtleRobot(Node):
         self.broadcaster.sendTransform(base_link)
         if self.go_robot_flag:
             self.get_stem_angle()
+            self.wheel_spin()
             self.cmd_vel_to_goal()
         
         if self.state == State.BACKHOME:
