@@ -19,6 +19,11 @@ def generate_launch_description():
     turtle_brick_path = get_package_share_path('turtle_brick')
     turtle_param_path = turtle_brick_path / 'turtle.yaml'
     # Start turtle sim node
+    run_turtle_node = IncludeLaunchDescription(
+      PythonLaunchDescriptionSource([os.path.join(
+         get_package_share_directory('turtle_brick')),
+         '/run_turtle.launch.py'])
+      )
     arena_node = Node(
             package='turtle_brick',
             executable='arena',
@@ -32,6 +37,7 @@ def generate_launch_description():
     
 
     return LaunchDescription([
+        run_turtle_node,
         arena_node,
         catcher_node
     ])
