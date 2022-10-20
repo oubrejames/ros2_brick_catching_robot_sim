@@ -315,6 +315,8 @@ class Arena(Node):
 
                     self.time += 0.004
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
+                else:
+                    self.state = State.RESET
             
             # If you are dropping and above the platform stop at platform height
             # Else stop at ground
