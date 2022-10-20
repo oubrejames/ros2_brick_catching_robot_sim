@@ -137,18 +137,20 @@ class TurtleRobot(Node):
         Args:
             data (_type_): _description_
         """
-        self.platform_tilt_rads = 0
-        self.state = State.INIT
-        self.caught_flag = False
-        self.platform_tilt_rads = 0.0
-        self.stem_turn_rads = 0.0
-        self.wheel_turn_rads = 0.0
-        self.platform_tilt_vel = 0.0 
-        self.stem_turn_vel = 0.0 
-        self.wheel_turn_vel = 0.0
-        self.go_robot_flag = False
-        #self.__init__()
-        #self.go_robot_flag = False
+        if data.data:
+            
+            self.caught_flag = False
+            self.platform_tilt_rads = 0.0
+            self.stem_turn_rads = 0.0
+            self.wheel_turn_rads = 0.0
+            self.platform_tilt_vel = 0.0 
+            self.stem_turn_vel = 0.0 
+            self.wheel_turn_vel = 0.0
+            self.pub_joints.publish(self.joints)   
+            self.go_robot_flag = False
+            self.state = State.INIT
+            #self.__init__()
+            #self.go_robot_flag = False
         
     def go_robot_callback(self, data):
         self.go_robot_flag = data.data

@@ -396,7 +396,7 @@ class Arena(Node):
         self.state_brick = State.INIT
         self.catch_once = True
         self.reset_bool.data = True
-        #self.pub_reset.publish(self.reset_bool)
+        self.pub_reset.publish(self.reset_bool)
         self.reset_bool.data = False
         #self.__init__()
             
