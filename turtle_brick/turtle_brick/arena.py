@@ -84,6 +84,7 @@ class Arena(Node):
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.pub_boundary = self.create_publisher(MarkerArray, "visualization_marker_array", 10) # Marker publisher for boundary of the arena
         self.pub_brick = self.create_publisher(Marker, "visualization_marker", 10) # Marker publisher for brick
+        self.pub_reset = self.create_publisher(Bool, "reset_sim", 10) 
         self.time = 0.0
         #self.pub_goal = self.create_publisher(PoseStamped, "goal_pose", 10)
         self.brick_x = 12.0 # Made 12 so that brick frame always spawns outside of arena originally
@@ -91,7 +92,12 @@ class Arena(Node):
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
         self.pub_brick_status = self.create_publisher(Bool, "brick_status", 10)
-
+        
+        
+        
+        self.reset_bool = Bool()
+        self.reset_bool.data = False
+        
         self.brick_init = False # Flag to not spawn brick until called
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.turtle_pose = Pose()
@@ -370,7 +376,7 @@ class Arena(Node):
         self.brick.header.stamp = time
         self.broadcaster.sendTransform(self.brick)
         self.make_brick()
-        self.get_logger().info(f'State: {self.state}, Brick State: {self.state_brick}')
+
         if self.brick_init: # Dont publish brick until initialized
             self.pub_brick.publish(self.brick_marker)
              
@@ -384,6 +390,15 @@ class Arena(Node):
         self.brick.transform.rotation.y = tilt_quant[1]#brick_wrt_platform.transform.rotation.y
         self.brick.transform.rotation.z = tilt_quant[2]#brick_wrt_platform.transform.rotation.z
         self.brick.transform.rotation.w = tilt_quant[3]#brick_wrt_platform.transform.rotation.w
+        
+        self.brick_tf_and_pub()
+        self.state = State.NEW_BRICK
+        self.state_brick = State.INIT
+        self.catch_once = True
+        self.reset_bool.data = True
+        self.pub_reset.publish(self.reset_bool)
+        self.reset_bool.data = False
+        self.__init__()
             
     def timer_callback(self):
         """
@@ -403,6 +418,9 @@ class Arena(Node):
                     
         if self.state == State.RESET:
             self.reset_the_brick() # Reset brick this aint work
+        self.get_logger().info(f'State      : {self.state}')
+        self.get_logger().info(f'Brick State: {self.state_brick}')
+        #self.pub_reset.publish(False)
 
 
         

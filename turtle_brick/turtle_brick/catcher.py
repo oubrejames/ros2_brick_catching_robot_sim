@@ -54,7 +54,8 @@ class State(Enum):
     LISTENING = auto(),
     UNREACHABLE = auto(),
     REACHABLE = auto(),
-    CAUGHT = auto()
+    CAUGHT = auto(),
+    RESET = auto()
     
 class Catcher(Node):
     """
@@ -92,6 +93,7 @@ class Catcher(Node):
         
         self.sub = self.create_subscription(Pose, "turtle1/pose", self.listener_callback, 10)
         self.sub_brick_status = self.create_subscription(Bool, "brick_status", self.brick_status_callback, 10)
+        self.sub_reset = self.create_subscription(Bool, "reset_sim", self.reset_callback, 10)
         ##############
         self.pub_send_turtle_robot = self.create_publisher(Bool, "send_turtle_robot", 10)
         self.pub_is_brick_caught = self.create_publisher(Bool, "brick_caught", 10)
@@ -118,6 +120,13 @@ class Catcher(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         
         self.tmr = self.create_timer(0.01, self.timer_callback) 
+
+    def reset_callback(self, msg):
+        """"""
+        if msg.data:
+            self.state = State.INIT
+            self.flag = False
+            self.__init__()
 
     def show_text_rviz(self):
         if self.text_counter == 0:
@@ -259,9 +268,10 @@ class Catcher(Node):
     def timer_callback(self):
         """
         """
+        
         if self.brick_status:
             self.listen_to_the_brick()
-            self.did_brick_reset()  
+            #self.did_brick_reset()  
             
             if self.state == State.INIT:
                 self.detect_falling()
@@ -288,7 +298,7 @@ class Catcher(Node):
                 caught_flag = Bool()
                 caught_flag.data = True
                 self.pub_is_brick_caught.publish(caught_flag)
-        
+        self.get_logger().info(f'State: {self.state}')
 def main():
     logger = rclpy.logging.get_logger('logger')
 

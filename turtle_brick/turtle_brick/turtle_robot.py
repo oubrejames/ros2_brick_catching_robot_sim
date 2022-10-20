@@ -16,6 +16,8 @@ from geometry_msgs.msg import Point, PoseStamped
 from enum import Enum, auto
 from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
+
+
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
@@ -54,7 +56,8 @@ class State(Enum):
     DETECTING = auto(),
     BACKHOME = auto(),
     MOVING = auto(),
-    STOPPED = auto()
+    STOPPED = auto(),
+    RESET = auto()
     
 class TurtleRobot(Node):
     """
@@ -92,6 +95,8 @@ class TurtleRobot(Node):
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
         self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
+        self.sub_reset = self.create_subscription(Bool, "reset_sim", self.reset_callback, 10)
+
         #######
         self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
         self.time = 0
@@ -121,7 +126,17 @@ class TurtleRobot(Node):
         # Create a timer to do the rest of the transforms
 
         self.tmr = self.create_timer(0.004, self.timer_callback)
-       
+    def reset_callback(self, data):
+        """_summary_
+
+        Args:
+            data (_type_): _description_
+        """
+        self.platform_tilt_rads = 0
+        self.state = State.INIT
+        self.__init__()
+        #self.go_robot_flag = False
+        
     def go_robot_callback(self, data):
         self.go_robot_flag = data.data
         
@@ -187,15 +202,7 @@ class TurtleRobot(Node):
         
         # Broadcast TF
         self.tf_static_broadcaster.sendTransform(t)
-        
-    def publish_joints(self):
-
-        self.joints.header.stamp = self.get_clock().now().to_msg()
-        self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
-        self.joints.position = [self.platform_tilt_rads, self.stem_turn_rads, self.wheel_turn_rads, ]
-        self.joints.velocity = [self.platform_tilt_vel, self.stem_turn_vel, self.wheel_turn_vel]
-        self.pub_joints.publish(self.joints)
-     
+            
     def get_stem_angle(self):
         """"""
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
@@ -211,7 +218,6 @@ class TurtleRobot(Node):
 
     def timer_callback(self):
         # Define base_link frame 
-        # self.publish_joints()
         self.time += 0.01
         self.joints.header.stamp = self.get_clock().now().to_msg()
         self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
@@ -247,7 +253,7 @@ class TurtleRobot(Node):
             self.platform_tilt_rads = 0.7
             self.platform_tilt_vel = 0.3
             print("lol")
-     
+        self.get_logger().info(f'State: {self.state}')
             
         
 
