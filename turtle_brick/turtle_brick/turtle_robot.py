@@ -18,7 +18,7 @@ from enum import Enum, auto
 from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
 from turtle_brick_interfaces.msg import Tilt
-
+from nav_msgs.msg import Odometry
 
 # Modified code from ROS2 static broadcater tutorial source code 
 # Accessed 10/9/2022
@@ -106,6 +106,7 @@ class TurtleRobot(Node):
         self.caught_flag = False
         #######
         self.pub_tilt_to_arena = self.create_publisher(Bool, "tilt_in_arena", 10)
+        self.odom_publisher = self.create_publisher(Odometry, "odom", 10)
         self.time = 0
         
         self.joints = JointState()
@@ -177,6 +178,12 @@ class TurtleRobot(Node):
             
         self.turtle_pose = msg
         
+    def pub_odom(self):
+        """"""
+        odom = Odometry()
+        odom.twist.twist = Twist(linear = Vector3(x = self.turtle_pose.x, y = self.turtle_pose.y ,z = 0.0))
+        self.odom_publisher.publish(odom)
+        
     def cmd_vel_to_goal(self):
         """"""
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
@@ -202,6 +209,8 @@ class TurtleRobot(Node):
         else:
             self.state = State.MOVING
             self.pub_vel.publish(cmd_2_goal)
+
+        
         
     def make_transforms(self):
         # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
@@ -278,6 +287,8 @@ class TurtleRobot(Node):
             self.platform_tilt_rads = self.tilt_degrees
             self.platform_tilt_vel = 0.3
             print("lol")
+        
+        self.pub_odom()
         self.get_logger().info(f'State: {self.state}')
             
         
