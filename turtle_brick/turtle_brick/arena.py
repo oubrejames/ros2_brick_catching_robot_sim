@@ -422,8 +422,8 @@ class Arena(Node):
                     
         if self.state == State.RESET:
             self.reset_the_brick() # Reset brick this aint work
-        self.get_logger().info(f'State      : {self.state}')
-        self.get_logger().info(f'Brick State: {self.state_brick}')
+        # self.get_logger().info(f'State      : {self.state}')
+        # self.get_logger().info(f'Brick State: {self.state_brick}')
         #self.pub_reset.publish(False)
 
 
