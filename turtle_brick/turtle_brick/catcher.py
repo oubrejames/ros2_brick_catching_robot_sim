@@ -217,7 +217,7 @@ class Catcher(Node):
         """"""
         zdiff = abs(self.brick_pose.z - self.platform_h)
 
-        if  zdiff < 0.1:#125: # Is brick caught?
+        if  zdiff < 0.15:#125: # Is brick caught?
             self.state = State.CAUGHT
 
             

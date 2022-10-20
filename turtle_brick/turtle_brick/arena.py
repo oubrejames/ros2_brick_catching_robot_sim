@@ -322,9 +322,9 @@ class Arena(Node):
                     print("HERE", self.platform_h)
                     self.brick_z_current = self.brick_z0 - 0.5*9.8*self.time**2
                     self.time += 0.004
-                # else:
+                else:
                 #     # self.state_brick = State.ON_PLATFORM
-                #     #self.brick_z_current = self.platform_h+0.1
+                    self.brick_z_current = self.platform_h+0.1
                 #     print("Test")
             
         if abs(self.turtle_pose.x - self.brick_x) < 0.05 and abs(self.turtle_pose.y - self.brick_y) < 0.05: # If you are above the platform
