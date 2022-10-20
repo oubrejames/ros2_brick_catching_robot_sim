@@ -2,6 +2,7 @@ from cmath import atan
 import math
 from re import S
 import sys
+from venv import create
 from geometry_msgs.msg import TransformStamped
 import numpy as np
 import rclpy
@@ -16,6 +17,7 @@ from geometry_msgs.msg import Point, PoseStamped
 from enum import Enum, auto
 from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
+from turtle_brick_interfaces.msg import Tilt
 
 
 # Modified code from ROS2 static broadcater tutorial source code 
@@ -92,6 +94,10 @@ class TurtleRobot(Node):
         
         self.declare_parameter("max_velocity", 0.4,
                                ParameterDescriptor(description="The maximum velocity of the turtle robot in meters/sec"))
+        
+        self.tilt_degrees = 0.7
+        self.tilt_sub = self.create_subscription(Tilt, "tilt", self.tilt_callback, 10)
+        
         self.max_velocity  = self.get_parameter("max_velocity").get_parameter_value().double_value
         self.pub_vel = self.create_publisher(Twist, "turtle1/cmd_vel", 10)
         self.pub_joints = self.create_publisher(JointState, "joint_states", 10)
@@ -130,6 +136,9 @@ class TurtleRobot(Node):
         
     def brick_caught_callback(self, data):
         self.caught_flag = data.data
+        
+    def tilt_callback(self, msg):
+        self.tilt_degrees = msg.theta
         
     def reset_callback(self, data):
         """_summary_
@@ -266,7 +275,7 @@ class TurtleRobot(Node):
         
         if self.state == State.BACKHOME:
             # Tilt
-            self.platform_tilt_rads = 0.7
+            self.platform_tilt_rads = self.tilt_degrees
             self.platform_tilt_vel = 0.3
             print("lol")
         self.get_logger().info(f'State: {self.state}')
