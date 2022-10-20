@@ -146,19 +146,31 @@ class TurtleRobot(Node):
         self.tmr = self.create_timer(0.004, self.timer_callback)
         
     def brick_caught_callback(self, data):
+        """Subscriber to read when the brick is caught from the brick_caught
+        topic.
+
+        Args:
+            data (Bool): boolean that indicates if the brick is caught on the platform
+        """
         self.caught_flag = data.data
         
     def tilt_callback(self, msg):
+        """Subscriber to read the tilt topic to get a user specfied tilt angle for the platform.
+
+        Args:
+            msg (Tilt): Custom message type indication radian value of tilt angle. 
+        """
         self.tilt_degrees = msg.theta
         
     def reset_callback(self, data):
-        """_summary_
+        """Subscriber to the reset_sim topic to reset the simulation when the
+        brick respawns.
 
         Args:
-            data (_type_): _description_
+            data (Bool): Boolean that indicates if resetting must happen
         """
         if data.data:
-            
+            # Reset to initial states
             self.caught_flag = False
             self.platform_tilt_rads = 0.0
             self.stem_turn_rads = 0.0
@@ -169,19 +181,31 @@ class TurtleRobot(Node):
             self.pub_joints.publish(self.joints)   
             self.go_robot_flag = False
             self.state = State.INIT
-            #self.__init__()
-            #self.go_robot_flag = False
-        
+      
     def go_robot_callback(self, data):
+        """Subscriber to the send_turtle_robot topic 
+
+        Args:
+            data (Bool): Boolean that indicates if the robot should start moving
+        """
         self.go_robot_flag = data.data
         
     def listener_callback_goal_pose(self, msg):
-        """TODO"""
+        """Subscriber to the goal_pose topic.
+
+        Args:
+            msg (PoseStamped): Pose indicating the point for the turtle to move to.
+        """
         self.goal_pose = msg  
         
     def listener_callback_turtle_pose(self, msg):
-        """Get turtle pose.
+        """Subscriber to the turtle1/pose topic to get the current
+        position of the robot.
+
+        Args:
+            msg (Pose): Position of the robot.
         """
+        # Get just initial position
         if self.turtle_init_flag:
             self.turtle_init = msg
             self.turtle_init_flag = False
@@ -189,41 +213,48 @@ class TurtleRobot(Node):
         self.turtle_pose = msg
         
     def pub_odom(self):
-        """"""
+        """Publishes an odometry msg to the odom topic corresponding to the position of the turtle.
+        """
         odom = Odometry()
         odom.twist.twist = Twist(linear = Vector3(x = self.turtle_pose.x, y = self.turtle_pose.y ,z = 0.0))
         self.odom_publisher.publish(odom)
         
     def cmd_vel_to_goal(self):
-        """"""
+        """Publish necesssary velocity commands to the robot.
+        """
+        # Get the difference between current position and goal
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
         y = self.goal_pose.pose.position.y - self.turtle_pose.y
+        
+        # Calculate x and y velocities based off max velocity
         theta = math.atan2(y,x)
         x_vel = self.max_velocity*math.cos(theta)
         y_vel = self.max_velocity*math.sin(theta)
         cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         
-        if abs(x)<0.01 and abs(y)<0.01: # At goal, Stop the jiggle
+        # If close enough to goal stop moving
+        if abs(x)<0.01 and abs(y)<0.01: 
             cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
                 angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
             self.state = State.STOPPED
             self.pub_vel.publish(cmd_2_goal)
-            # Are we at the center
+            
+            # Is the turtle back at the home position
             if (self.goal_pose.pose.position.x - self.turtle_init.x) < 0.01 and (self.goal_pose.pose.position.y - self.turtle_init.y) < 0.01:
                 self.state = State.BACKHOME
                 tilt_arena_bool = Bool()
                 tilt_arena_bool.data = True
-                if self.caught_flag:
+                if self.caught_flag: # Tilt the platform when back at home position with brick
                     self.pub_tilt_to_arena.publish(tilt_arena_bool)
         else:
             self.state = State.MOVING
             self.pub_vel.publish(cmd_2_goal)
-
-        
-        
+  
     def make_transforms(self):
-        # "TransformStamped object, which will be the message we will send over once populated" - from tutorial 
+        """Compute transforms for world to odom frame.
+        Modified from link at top of page.
+        """
         t = TransformStamped()
 
         # Give the transform being published a timestamp
@@ -232,8 +263,7 @@ class TurtleRobot(Node):
         t.header.frame_id = 'world'
         # Set child frame
         t.child_frame_id = "odom"
-
-        # TODO update this to initial position of the turtle
+        
         t.transform.translation.x = self.odom_x
         t.transform.translation.y = self.odom_y
         t.transform.translation.z = 0.0
@@ -248,31 +278,36 @@ class TurtleRobot(Node):
         self.tf_static_broadcaster.sendTransform(t)
             
     def get_stem_angle(self):
-        """"""
+        """Compute the heading angle of the robot.
+        """
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
         y = self.goal_pose.pose.position.y - self.turtle_pose.y
         heading = math.atan2(y,x)
         self.stem_turn_rads = heading
 
     def wheel_spin(self):
-        """"""
+        """Function to spin the wheel at the proper speed if moving.
+        """
         if self.state == State.MOVING:
             self.wheel_turn_vel = self.max_velocity / self.wheel_radius
             self.wheel_turn_rads = self.max_velocity * self.time
 
     def timer_callback(self):
-        # Define base_link frame 
+        """Commands to run every time the timer itterates.
+        """
         self.time += 0.01
+        
+        # Publish joints to joint state publisher
         self.joints.header.stamp = self.get_clock().now().to_msg()
         self.joints.name = ["turn_wheel", "spin_wheel", "base_to_tube", "tilt_platform"]
         self.joints.position = [float(self.stem_turn_rads), float(self.wheel_turn_rads), float(0.0), float(self.platform_tilt_rads)]
         self.joints.velocity = [float(self.stem_turn_vel), float(self.wheel_turn_vel), float(0.0), float(self.platform_tilt_vel)]
         self.pub_joints.publish(self.joints)          
         
+        # Define base link and broadcast it
         base_link = TransformStamped()
         base_link.header.frame_id = "odom"
         base_link.child_frame_id = "base_link"
-        # TODO update this to initial position of the turtle
         base_link.transform.translation.x = self.turtle_pose.x - self.odom_x
         base_link.transform.translation.y = self.turtle_pose.y - self.odom_y
         base_link.transform.translation.z = self.base_offset
@@ -281,43 +316,26 @@ class TurtleRobot(Node):
         base_link.transform.rotation.y = quat_base[1]
         base_link.transform.rotation.z = quat_base[2]
         base_link.transform.rotation.w = quat_base[3]      
-               
-        # don't forget to put a timestamp
         time = self.get_clock().now().to_msg()
         base_link.header.stamp = time
-        
         self.broadcaster.sendTransform(base_link)
+        
+        # Move turtle towards goal
         if self.go_robot_flag:
             self.get_stem_angle()
             self.wheel_spin()
             self.cmd_vel_to_goal()
         
+        # Tilt platform if robot have brick at home position
         if self.state == State.BACKHOME:
             # Tilt
             self.platform_tilt_rads = self.tilt_degrees
             self.platform_tilt_vel = 0.3
-            print("lol")
         
+        # Publish odometry to odom topic        
         self.pub_odom()
-        self.get_logger().info(f'State: {self.state}')
             
-        
-
 def main():
-    logger = rclpy.logging.get_logger('logger')
-
-    # # obtain parameters from command line arguments
-    # if len(sys.argv) != 8:
-    #     logger.info('Invalid number of parameters. Usage: \n'
-    #                 '$ ros2 run learning_tf2_py static_turtle_tf2_broadcaster'
-    #                 'child_frame_name x y z roll pitch yaw')
-    #     sys.exit(1)
-
-    # if sys.argv[1] == 'world':
-    #     logger.info('Your static turtle name cannot be "world"')
-    #     sys.exit(2)
-
-    # pass parameters and initialize node
     rclpy.init()
     node = TurtleRobot()
     try:
