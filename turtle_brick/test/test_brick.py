@@ -1,6 +1,6 @@
 """Test that launch file goes at 100 hz"""
 
-# Code based on 
+# Code based on link below and Matt's in_out launch test
 # https://github.com/ros2/launch_ros/blob/humble/launch_testing_ros/test/examples/talker_listener_launch_test.py
 # Accessed 10/19/2022
 
@@ -15,7 +15,7 @@ import unittest
 import launch_testing.actions
 import pytest
 import rclpy
-from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Twist
 
 @pytest.mark.rostest
 def generate_test_description():
@@ -49,24 +49,25 @@ class TestME495Tf(unittest.TestCase):
     def tearDown(self):
         self.node.destroy_node()
         
-    def test_talker_transmits(self, launch_service, talker, proc_output):     # dont think these args matter   
+    def test_hz(self):   
         msgs_rx = []
 
         sub = self.node.create_subscription(
-            JointState, 
-            'joint_states', 
+            Twist, 
+            'turtle1/cmd_vel', 
             lambda msg: msgs_rx.append(msg), 
             10
         )
         try:
             # Wait until the talker transmits two messages over the ROS topic
-            end_time = time.time() + 10 # Creates tmie and adds 10 seconds
+            end_time = time.time() + 5 # Creates tmie and adds 10 seconds
             # For 10 seconds it spins through that node
             # it listens and calls the local function
             while time.time() < end_time:
                 rclpy.spin_once(self.node, timeout_sec=0.1)
+                
         finally:
             self.node.destroy_subscription(sub)
         
  
-        self.assertAlmostEqual(len(msgs_rx),100)  # use to check if it was running a 100 hz
+        self.assertAlmostEqual(5/len(msgs_rx),0.01,5)  # use to check if it was running a 100 hz

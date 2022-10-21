@@ -89,6 +89,8 @@ class TurtleRobot(Node):
         self.tilt_degrees = 0.7 # Default tilt degree in rads
         self.caught_flag = False # Flag for if the brick is caught
         self.time = 0 # Time counter
+        self.cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
+                        angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         
         # Initial joint state values
         self.joints = JointState()
@@ -139,7 +141,7 @@ class TurtleRobot(Node):
         self.broadcaster = TransformBroadcaster(self)
         
         # Create a timer to do the rest of the transforms
-        self.tmr = self.create_timer(0.004, self.timer_callback)
+        self.tmr = self.create_timer(0.01, self.timer_callback)
         
     def brick_caught_callback(self, data):
         """Subscriber to read when the brick is caught from the brick_caught
@@ -226,15 +228,15 @@ class TurtleRobot(Node):
         theta = math.atan2(y,x)
         x_vel = self.max_velocity*math.cos(theta)
         y_vel = self.max_velocity*math.sin(theta)
-        cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
+        self.cmd_2_goal = Twist(linear = Vector3(x = x_vel, y = y_vel ,z =0.0), 
                         angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
         
         # If close enough to goal stop moving
         if abs(x)<0.01 and abs(y)<0.01: 
-            cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
+            self.cmd_2_goal = Twist(linear = Vector3(x = 0.0, y = 0.0 ,z =0.0), 
                 angular = Vector3(x = 0.0, y = 0.0, z = 0.0))
             self.state = State.STOPPED
-            self.pub_vel.publish(cmd_2_goal)
+            #self.pub_vel.publish(self.cmd_2_goal)
             
             # Is the turtle back at the home position
             if (self.goal_pose.pose.position.x - self.turtle_init.x) < 0.01 and (self.goal_pose.pose.position.y - self.turtle_init.y) < 0.01:
@@ -245,7 +247,7 @@ class TurtleRobot(Node):
                     self.pub_tilt_to_arena.publish(tilt_arena_bool)
         else:
             self.state = State.MOVING
-            self.pub_vel.publish(cmd_2_goal)
+            #self.pub_vel.publish(self.cmd_2_goal)
   
     def make_transforms(self):
         """Compute transforms for world to odom frame.
@@ -321,7 +323,7 @@ class TurtleRobot(Node):
             self.get_stem_angle()
             self.wheel_spin()
             self.cmd_vel_to_goal()
-        
+        self.pub_vel.publish(self.cmd_2_goal)
         # Tilt platform if robot have brick at home position
         if self.state == State.BACKHOME:
             # Tilt
