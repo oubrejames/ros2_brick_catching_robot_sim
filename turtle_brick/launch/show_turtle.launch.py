@@ -39,10 +39,8 @@ def generate_launch_description():
     # )
     
 
-    # DeclareLaunchArgument('use_jsp', default_value='v1'),
-    # LogInfo(msg=LaunchConfiguration('bag_version')),
-    # LogInfo(msg='Version 1', condition=LaunchConfigurationEquals('bag_version', 'v1')),
-    # LogInfo(msg='Version 2', condition=LaunchConfigurationEquals('bag_version', 'v2'))
+    use_jsp = DeclareLaunchArgument('joint_states', default_value='gui', choices=['gui', 'jsp', 'none'],
+                                    description= "Option to choose a joint state publisher")
     
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
@@ -62,17 +60,17 @@ def generate_launch_description():
     #         ),
 
     # Depending on gui parameter, either launch joint_state_publisher or joint_state_publisher_gui
-    # joint_state_publisher_node = Node(
-    #     package='joint_state_publisher',
-    #     executable='joint_state_publisher'
-    #     #condition=UnlessCondition(LaunchConfiguration('gui'))
-    # )
+    joint_state_publisher_node = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        condition=(LaunchConfigurationEquals('joint_states', 'jsp'))
+    )
 
-    # joint_state_publisher_gui_node = Node(
-    #     package='joint_state_publisher_gui',
-    #     executable='joint_state_publisher_gui',
-    #     condition=IfCondition(LaunchConfiguration('gui'))
-    # )
+    joint_state_publisher_gui_node = Node(
+        package='joint_state_publisher_gui',
+        executable='joint_state_publisher_gui',
+        condition=(LaunchConfigurationEquals('joint_states','gui'))
+    )
     
 
     rviz_node = Node(
@@ -87,8 +85,8 @@ def generate_launch_description():
         gui_arg,
         model_arg,
         rviz_arg,
-        # joint_state_publisher_node,
-        # joint_state_publisher_gui_node,
+        joint_state_publisher_node,
+        joint_state_publisher_gui_node,
         robot_state_publisher_node,
         rviz_node
         ])
