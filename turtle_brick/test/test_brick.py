@@ -70,4 +70,4 @@ class TestME495Tf(unittest.TestCase):
             self.node.destroy_subscription(sub)
         
  
-        self.assertAlmostEqual(5/len(msgs_rx),0.01,5)  # use to check if it was running a 100 hz
+        self.assertAlmostEqual(5/len(msgs_rx),0.01,2)  # use to check if it was running a 100 hz

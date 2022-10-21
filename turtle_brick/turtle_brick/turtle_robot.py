@@ -54,6 +54,19 @@ def quaternion_from_euler(ai, aj, ak):
 
     return q
 
+def calculate_angular_vel(wheel_radius, linear_vel):
+    """Calculate angular velocity given wheel radius and linear velocity
+
+    Args:
+        wheel_radius (float): Radius of the wheel
+        linear_vel (float): Linear velocity of robot
+
+    Returns:
+        float: Calculated angular velocity 
+    """
+    angular_vel = linear_vel / wheel_radius
+    return angular_vel
+
 class State(Enum):
     """ States to keep track of where the system is.
     """
@@ -287,7 +300,7 @@ class TurtleRobot(Node):
         """Function to spin the wheel at the proper speed if moving.
         """
         if self.state == State.MOVING:
-            self.wheel_turn_vel = self.max_velocity / self.wheel_radius
+            self.wheel_radius = calculate_angular_vel(self.wheel_radius, self.max_velocity)
             self.wheel_turn_rads = self.max_velocity * self.time
 
     def timer_callback(self):
