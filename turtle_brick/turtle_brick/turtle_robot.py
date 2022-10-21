@@ -338,7 +338,7 @@ class TurtleRobot(Node):
             self.cmd_vel_to_goal()
         self.pub_vel.publish(self.cmd_2_goal)
         # Tilt platform if robot have brick at home position
-        if self.state == State.BACKHOME:
+        if self.state == State.BACKHOME and self.caught_flag:
             # Tilt
             self.platform_tilt_rads = self.tilt_degrees
             self.platform_tilt_vel = 0.3
