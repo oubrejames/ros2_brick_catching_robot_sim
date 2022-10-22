@@ -7,7 +7,6 @@ from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from tf2_ros import TransformBroadcaster
 from turtlesim.msg import Pose
 from rcl_interfaces.msg import ParameterDescriptor
-import yaml
 from geometry_msgs.msg import Twist, Vector3
 from geometry_msgs.msg import PoseStamped
 from enum import Enum, auto
@@ -22,15 +21,19 @@ from nav_msgs.msg import Odometry
 
 
 def quaternion_from_euler(ai, aj, ak):
-    """Takes in Euler angles and converts them to quaternions.
+    """
+    Take in Euler angles and converts them to quaternions. Function taken from link above.
 
     Args:
+    ----
         ai (float): Roll angle.
         aj (float): Pitch angle.
         ak (float): Yaw angle.
 
-    Returns:
+    Return:
+    ------
         float array: Array of quaternion angles.
+
     """
     ai /= 2.0
     aj /= 2.0
@@ -56,22 +59,26 @@ def quaternion_from_euler(ai, aj, ak):
 
 
 def calculate_angular_vel(wheel_radius, linear_vel):
-    """Calculate angular velocity given wheel radius and linear velocity
+    """
+    Calculate angular velocity given wheel radius and linear velocity.
 
     Args:
+    ----
         wheel_radius (float): Radius of the wheel
         linear_vel (float): Linear velocity of robot
 
-    Returns:
-        float: Calculated angular velocity
+    Return:
+    ------
+        float: Calculated angular velocity.
+
     """
     angular_vel = linear_vel / wheel_radius
     return angular_vel
 
 
 class State(Enum):
-    """ States to keep track of where the system is.
-    """
+    """States to keep track of where the system is."""
+
     FALLING = auto(),
     INIT = auto(),
     DETECTING = auto(),
@@ -82,7 +89,10 @@ class State(Enum):
 
 
 class TurtleRobot(Node):
-    """Node for controlling the turtle's actions. Broadcasts the location of the base_link
+    """
+    Node for controlling the turtle's actions.
+
+    Broadcasts the location of the base_link
     frame relative to the odom frame. Publishes to cmd_vel to actually move the robot. Publishes
     joint states to the joint_states topic. Publishes a boolean to the tilt topic to indicate
     to other nodes when the platform is tilting. Publishes the odometry of the robot to the
@@ -94,8 +104,7 @@ class TurtleRobot(Node):
     """
 
     def __init__(self):
-        """Initialize intitial variables, states, publishers and subscribers.
-        """
+        """Initialize variables, states, publishers and subscribers."""
         # Initialize node with name turtle_robot.
         super().__init__('turtle_robot')
 
@@ -170,28 +179,35 @@ class TurtleRobot(Node):
         self.tmr = self.create_timer(0.01, self.timer_callback)
 
     def brick_caught_callback(self, data):
-        """Subscriber to read when the brick is caught from the brick_caught
-        topic.
+        """
+        Subscribe to read when the brick is caught from the brick_caught topic.
 
         Args:
-            data (Bool): boolean that indicates if the brick is caught on the platform
+        ----
+            data (Bool): boolean that indicates if the brick is caught on the platform.
+
         """
         self.caught_flag = data.data
 
     def tilt_callback(self, msg):
-        """Subscriber to read the tilt topic to get a user specfied tilt angle for the platform.
+        """
+        Subscribe to read the tilt topic to get a user specfied tilt angle for the platform.
 
         Args:
+        ----
             msg (Tilt): Custom message type indication radian value of tilt angle.
+
         """
         self.tilt_degrees = msg.theta
 
     def reset_callback(self, data):
-        """Subscriber to the reset_sim topic to reset the simulation when the
-        brick respawns.
+        """
+        Subscribe to the reset_sim topic to reset the simulation when the brick respawns.
 
         Args:
-            data (Bool): Boolean that indicates if resetting must happen
+        ----
+            data (Bool): Boolean that indicates if resetting must happen.
+
         """
         if data.data:
             # Reset to initial states
@@ -207,27 +223,35 @@ class TurtleRobot(Node):
             self.state = State.INIT
 
     def go_robot_callback(self, data):
-        """Subscriber to the send_turtle_robot topic
+        """
+        Subscribe to the send_turtle_robot topic.
 
         Args:
-            data (Bool): Boolean that indicates if the robot should start moving
+        ----
+            data (Bool): Boolean that indicates if the robot should start moving.
+
         """
         self.go_robot_flag = data.data
 
     def listener_callback_goal_pose(self, msg):
-        """Subscriber to the goal_pose topic.
+        """
+        Subscribe to the goal_pose topic.
 
         Args:
+        ----
             msg (PoseStamped): Pose indicating the point for the turtle to move to.
+
         """
         self.goal_pose = msg
 
     def listener_callback_turtle_pose(self, msg):
-        """Subscriber to the turtle1/pose topic to get the current
-        position of the robot.
+        """
+        Subscribe to the turtle1/pose topic to get the current position of the robot.
 
         Args:
+        ----
             msg (Pose): Position of the robot.
+
         """
         # Get just initial position
         if self.turtle_init_flag:
@@ -237,8 +261,7 @@ class TurtleRobot(Node):
         self.turtle_pose = msg
 
     def pub_odom(self):
-        """Publishes an odometry msg to the odom topic corresponding to the position of the turtle.
-        """
+        """Publish odometry msg to the odom topic corresponding to the position of the turtle."""
         odom = Odometry()
         odom.twist.twist = Twist(
             linear=Vector3(
@@ -248,8 +271,7 @@ class TurtleRobot(Node):
         self.odom_publisher.publish(odom)
 
     def cmd_vel_to_goal(self):
-        """Publish necesssary velocity commands to the robot.
-        """
+        """Publish necesssary velocity commands to the robot."""
         # Get the difference between current position and goal
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
         y = self.goal_pose.pose.position.y - self.turtle_pose.y
@@ -282,7 +304,9 @@ class TurtleRobot(Node):
             # self.pub_vel.publish(self.cmd_2_goal)
 
     def make_transforms(self):
-        """Compute transforms for world to odom frame.
+        """
+        Compute transforms for world to odom frame.
+
         Modified from link at top of page.
         """
         t = TransformStamped()
@@ -308,24 +332,21 @@ class TurtleRobot(Node):
         self.tf_static_broadcaster.sendTransform(t)
 
     def get_stem_angle(self):
-        """Compute the heading angle of the robot.
-        """
+        """Compute the heading angle of the robot."""
         x = self.goal_pose.pose.position.x - self.turtle_pose.x
         y = self.goal_pose.pose.position.y - self.turtle_pose.y
         heading = math.atan2(y, x)
         self.stem_turn_rads = heading
 
     def wheel_spin(self):
-        """Function to spin the wheel at the proper speed if moving.
-        """
+        """Spin the wheel at the proper speed if moving."""
         if self.state == State.MOVING:
             self.wheel_radius = calculate_angular_vel(
                 self.wheel_radius, self.max_velocity)
             self.wheel_turn_rads = self.max_velocity * self.time
 
     def timer_callback(self):
-        """Commands to run every time the timer itterates.
-        """
+        """Commands to run every time the timer itterates."""
         self.time += 0.01
 
         # Publish joints to joint state publisher

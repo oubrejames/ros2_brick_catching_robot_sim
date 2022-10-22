@@ -4,7 +4,6 @@ import rclpy
 from rclpy.node import Node
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point
 from rcl_interfaces.msg import ParameterDescriptor
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -20,18 +19,20 @@ from std_msgs.msg import Bool
 
 
 def quaternion_from_euler(ai, aj, ak):
-    """Takes in Euler angles and converts them to quaternions.
-    Function taken from link above.
+    """
+    Take in Euler angles and converts them to quaternions. Function taken from link above.
 
     Args:
+    ----
         ai (float): Roll angle.
         aj (float): Pitch angle.
         ak (float): Yaw angle.
 
-    Returns:
+    Return:
+    ------
         float array: Array of quaternion angles.
-    """
 
+    """
     ai /= 2.0
     aj /= 2.0
     ak /= 2.0
@@ -56,8 +57,8 @@ def quaternion_from_euler(ai, aj, ak):
 
 
 class State(Enum):
-    """ States to keep track of where the system is.
-    """
+    """States to keep track of where the system is."""
+
     FALLING = auto(),
     INIT = auto(),
     LISTENING = auto(),
@@ -69,12 +70,13 @@ class State(Enum):
 
 class Catcher(Node):
     """
-    Node to see if it is possible to catch the brick and take appropriate actions if it can or cannot.
+    Node to see if it is possible to catch the brick.
+
+    Takes appropriate actions if it can or cannot.
     """
 
     def __init__(self):
-        """Initialize intitial variables, states, publishers and subscribers.
-        """
+        """Initialize variables, states, publishers and subscribers."""
         # Initialize node with name turtle_robot.
         super().__init__('catcher')
         self.state = State.INIT
@@ -135,10 +137,13 @@ class Catcher(Node):
         self.tmr = self.create_timer(0.01, self.timer_callback)
 
     def reset_callback(self, msg):
-        """Callback that listens to the reset_sim topic to see if the simulation must be reset
+        """
+        Listen to the reset_sim topic to see if the simulation must be reset.
 
         Args:
-            msg (Bool): Describes if system must be reset
+        ----
+            msg (Bool): Describes if system must be reset.
+
         """
         if msg.data:
             self.state = State.INIT
@@ -146,8 +151,7 @@ class Catcher(Node):
             self.__init__()
 
     def show_text_rviz(self):
-        """Publishes text marker on RVIZ
-        """
+        """Publish text marker on RVIZ."""
         if self.text_counter == 0:
             self.text_marker = Marker()
             self.text_marker.header.frame_id = "/world"
@@ -173,16 +177,18 @@ class Catcher(Node):
             self.text_counter += 1
 
     def brick_status_callback(self, data):
-        """Subcribes to the brick_status topic to see if the brick is present or not.
+        """
+        Subcribes to the brick_status topic to see if the brick is present or not.
 
         Args:
+        ----
             data (Bool): Indicates presence of a brick
+
         """
         self.brick_status = data.data
 
     def listener_callback(self, msg):
-        """Get turtle pose.
-        """
+        """Get turtle pose."""
         if self.turtle_init_flag:
             self.turtle_init = msg
             self.turtle_init_flag = False
@@ -190,8 +196,7 @@ class Catcher(Node):
         self.turtle_pose = msg
 
     def detect_falling(self):
-        """Detects if the brick is falling and changes states.
-        """
+        """Detect if the brick is falling and changes states."""
         # Is brick falling?
 
         if self.is_brick_falling():
@@ -211,40 +216,43 @@ class Catcher(Node):
             self.state = State.REACHABLE
 
     def is_brick_falling(self):
-        """Math to detect falling.
+        """
+        Math to detect falling.
 
-        Returns:
-            bool: Sasys if the brick is falling
+        Return:
+        ------
+            bool: Says if the brick is falling
+
         """
         if self.prev_brick_pose.z > self.brick_pose.z:
             self.flag = True
         return self.flag
 
     def publish_goal(self):
-        """Publishes the robots end goal.
-        """
+        """Publish the robots end goal."""
         goal_pose = PoseStamped()
         goal_pose.pose.position.x = self.brick_pose.x
         goal_pose.pose.position.y = self.brick_pose.y
         self.pub_goal_pose.publish(goal_pose)
 
     def did_brick_reset(self):
-        """Checks to see if the brick has reset in its original position.
-        """
+        """Check to see if the brick has reset in its original position."""
         if self.prev_brick_pose.z < self.brick_pose.z:
             self.state = State.INIT
             self.flag = False
 
     def is_brick_caught(self):
-        """Checks if the brick has been caught and changes states if so.
-        """
+        """Check if the brick has been caught and changes states if so."""
         zdiff = abs(self.brick_pose.z - self.platform_h)
 
         if zdiff < 0.15:  # Is brick caught?
             self.state = State.CAUGHT
 
     def listen_to_the_brick(self):
-        """Finds the relationship between the world frame and brick frame and updates the bricks pose.
+        """
+        Find the relationship between the world frame and brick frame.
+
+        Updates the bricks pose.
         """
         from_frame_rel = self.target_frame
         to_frame_rel = 'world'
@@ -273,9 +281,7 @@ class Catcher(Node):
         self.brick_pose.z = t.transform.translation.z
 
     def timer_callback(self):
-        """Function to interate every time the timer is called.
-        """
-
+        """Iterate every time the timer is called."""
         if self.brick_status:
             self.listen_to_the_brick()
 

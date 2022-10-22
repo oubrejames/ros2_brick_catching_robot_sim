@@ -21,16 +21,19 @@ from tf2_ros import TransformException
 # https://docs.ros.org/en/humble/Tutorials/Intermediate/Tf2/Writing-A-Tf2-Static-Broadcaster-Py.html
 
 def quaternion_from_euler(ai, aj, ak):
-    """Takes in Euler angles and converts them to quaternions.
-    Function taken from link above.
+    """
+    Take in Euler angles and converts them to quaternions. Function taken from link above.
 
     Args:
+    ----
         ai (float): Roll angle.
         aj (float): Pitch angle.
         ak (float): Yaw angle.
 
-    Returns:
+    Return:
+    ------
         float array: Array of quaternion angles.
+
     """
     ai /= 2.0
     aj /= 2.0
@@ -56,8 +59,8 @@ def quaternion_from_euler(ai, aj, ak):
 
 
 class State(Enum):
-    """ States to keep track of where the system is.
-    """
+    """States to keep track of where the system is."""
+
     DROP = auto(),
     INIT = auto(),
     NEW_BRICK = auto(),
@@ -70,22 +73,30 @@ class State(Enum):
 
 
 class Arena(Node):
-    """ Node responsible for simulating environment.
-    Publishes markers to denote the boundaries of the environment in rviz over the visualization_marker_array topic.
+    """
+    Node responsible for simulating environment.
+
+    Publishes markers to denote the boundaries of the environment in rviz over
+    the visualization_marker_array topic.
     Publishes a marker over the visualization_marker topic to represent the brick.
-    Publishes a boolean to the brick_status topic to let other nodes know if the brick has spawned.
-    Publishes a boolean to the reset_sim topic to indicate when the other nodes must reset.
+    Publishes a boolean to the brick_status topic to let other nodes know if the
+    brick has spawned.
+    Publishes a boolean to the reset_sim topic to indicate when the other nodes
+    must reset.
     Subscribes to the turtle1/pose topic to keep up with the pose of the robot.
-    Subscribes to the brick_caught topic to know whether or not the brick has been caught by the platform.
-    Subscribes to the tilt_in_arena topic to know when the platform tilts to create associated pyhics for the brick.
-    Braodcasts the brick frame at the location of the brick relative to the world frame.
-    Offers a service called place (of custom type) that moves the brick to a pecified location.
+    Subscribes to the brick_caught topic to know whether or not the brick has been
+    caught by the platform.
+    Subscribes to the tilt_in_arena topic to know when the platform tilts to create
+    associated pyhics for the brick.
+    Braodcasts the brick frame at the location of the brick relative to the world
+    frame.
+    Offers a service called place (of custom type) that moves the brick to a
+    specified location.
     Offers a service called drop that causes the brick to fall in gravity.
     """
 
     def __init__(self):
-        """Initialize intitial variables, states, publishers and subscribers.
-        """
+        """Initialize variables, states, publishers and subscribers."""
         # Initialize node with name arena.
         super().__init__('arena')
         self.state = State.INIT
@@ -100,8 +111,8 @@ class Arena(Node):
             Marker, "visualization_marker", 10)  # Marker publisher for brick
         self.pub_reset = self.create_publisher(Bool, "reset_sim", 10)
         self.time = 0.0
-        self.brick_x = 12.0  # Made 12 so that brick frame always spawns outside of arena originally
-        self.brick_y = 12.0
+        self.brick_x = 12.0  # Made 12 so that brick frame always spawns outside
+        self.brick_y = 12.0  # of arena originally
         self.brick_z0 = 8.0
         self.brick_z_current = self.brick_z0
         self.pub_brick_status = self.create_publisher(Bool, "brick_status", 10)
@@ -149,17 +160,19 @@ class Arena(Node):
         self.tmr = self.create_timer(0.004, self.timer_callback)
 
     def tilt_callback(self, msg):
-        """Callback to read the tilt message.
-        """
+        """Read the tilt message."""
         if msg.data:
             self.state_brick = State.TILT
             self.state = State.TILT
 
     def brick_caught_callback(self, data):
-        """Callback to read brick_caught topic to see if the brick has been caught.
+        """
+        Read brick_caught topic to see if the brick has been caught.
 
         Args:
+        ----
             data (Bool): Boolean that describes if the brick has been caught
+
         """
         if data.data and self.catch_once:
             self.state_brick = State.CAUGHT
@@ -167,15 +180,17 @@ class Arena(Node):
             self.catch_once = False
 
     def listener_callback(self, msg):
-        """Get turtle pose.
-        """
+        """Get turtle pose."""
         self.turtle_pose = msg
 
     def listen_to_platforrm(self):
-        """Listener for brick to platform tf
+        """
+        Listen for brick to platform tf.
 
-        Returns:
+        Return:
+        ------
             Buffer: relationship between brick and platform frames
+
         """
         from_frame_rel = self.target_frame
         to_frame_rel = 'platform'
@@ -194,14 +209,18 @@ class Arena(Node):
         return t
 
     def place_callback(self, request, response):
-        """Callback for place service. Puts brick at a specified location
+        """
+        Put brick at a specified location.
 
         Args:
+        ----
             request (Place): Coordinates of brick
             response (Place): Null
 
-        Returns:
+        Return:
+        ------
             Place: Null
+
         """
         self.state = State.NEW_BRICK
         self.brick_x = request.x
@@ -213,8 +232,7 @@ class Arena(Node):
         return response
 
     def make_brick(self):
-        """Create the marker to publish as the brick
-        """
+        """Create the marker to publish as the brick."""
         self.brick_marker = Marker()
         self.brick_marker.header.frame_id = "/brick"
         self.brick_marker.header.stamp = self.get_clock().now().to_msg()
@@ -237,8 +255,7 @@ class Arena(Node):
         self.brick_marker.pose.position.z = 0.0
 
     def make_markers(self):
-        """Create the 4 markers used as walls of the arena
-        """
+        """Create the 4 markers used as walls of the arena."""
         self.marker1 = Marker()
         self.marker1.header.frame_id = "/world"
         self.marker1.header.stamp = self.get_clock().now().to_msg()
@@ -312,6 +329,7 @@ class Arena(Node):
         self.marker4.pose.position.z = 0.5
 
     def make_marker_array(self):
+        """Put all markers in an array to publish."""
         self.make_markers()
         self.marker_array = MarkerArray()
         self.marker_array.markers.append(self.marker1)
@@ -320,21 +338,24 @@ class Arena(Node):
         self.marker_array.markers.append(self.marker4)
 
     def drop_callback(self, request, response):
-        """Service callback to change to drop state
+        """
+        Service callback to change to drop state.
 
         Args:
+        ----
             request (Empty): triggers callback
             response (Empty): Nulll
 
-        Returns:
+        Return:
+        ------
             Empty: Null
+
         """
         self.state = State.DROP
         return response
 
     def drop_brick(self):
-        """Function to handle the pyhsics of dropping the brick
-        """
+        """Handle the pyhsics of dropping the brick."""
         if self.state == State.DROP:
             self.brick_init = True
             if self.state_brick == State.INIT:
@@ -364,8 +385,7 @@ class Arena(Node):
             self.state_brick = State.ABOVE_PLATFORM
 
     def brick_tf_and_pub(self):
-        """Calculate the brick tf based off the state and publish it
-        """
+        """Calculate the brick tf based off the state and publish it."""
         if self.state == State.NEW_BRICK:
             self.brick.transform.translation.x = self.brick_x
             self.brick.transform.translation.y = self.brick_y
@@ -409,8 +429,7 @@ class Arena(Node):
             self.pub_brick.publish(self.brick_marker)
 
     def reset_the_brick(self):
-        """Reset the brick to its starting location and reset all states so simulation can run again.
-        """
+        """Reset the brick and states so simulation can run again."""
         self.brick.transform.translation.x = self.brick_x
         self.brick.transform.translation.y = self.brick_y
         self.brick.transform.translation.z = self.brick_z0
@@ -430,8 +449,7 @@ class Arena(Node):
         self.reset_bool.data = False
 
     def timer_callback(self):
-        """Function to interate every time the timer is called.
-        """
+        """Iterate every time the timer is called."""
         # Publish arena walls
         self.pub_boundary.publish(self.marker_array)
 
